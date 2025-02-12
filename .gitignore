@@ -50,6 +50,3 @@ instance/
 # Docker 관련
 docker-compose.override.yml
 .dockerignore
-
-# 개인적인 코드
-packages.ipynb
