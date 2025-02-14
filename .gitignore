@@ -26,6 +26,7 @@ logs/
 
 # 데이터 및 캐시 파일
 data/
+data/models/
 *.db
 *.sqlite3
 
