@@ -1,3 +1,5 @@
+# 벡터 DB 차원 확인
+
 import faiss
 import os
 from langchain_huggingface import HuggingFaceEmbeddings
