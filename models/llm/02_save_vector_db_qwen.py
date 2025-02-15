@@ -1,6 +1,6 @@
 import os
-import pandas as pd
 import faiss
+import time
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -12,6 +12,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 # 파일 경로 설정
 csv_file_path = os.path.normpath(os.path.join(BASE_DIR, "data", "total_kor_counsel_bot_clean.csv"))
 vector_db_path = os.path.normpath(os.path.join(BASE_DIR, "data", "db", "faiss"))
+index_qwen_path = os.path.join(vector_db_path, "index_qwen.faiss")
+pkl_qwen_path = os.path.join(vector_db_path, "index_qwen.pkl")
 
 # CSV 파일 로드
 loader = CSVLoader(file_path=csv_file_path, encoding="utf-8")
@@ -26,19 +28,44 @@ print(f"데이터 분할 완료: 총 {len(splits)}개의 청크 생성됨.")
 # Qwen2.5-3B 모델에 맞는 임베딩 (768차원)
 qwen_embeddings = HuggingFaceEmbeddings(model_name="Qwen/Qwen2.5-3B")
 
-# FAISS 벡터 DB 생성 (768차원)
-vectorstore = FAISS.from_documents(documents=splits, embedding=qwen_embeddings)
+# 배치 설정
+batch_size = 2000  # 메모리 문제 방지 (2000개씩 처리)
+num_batches = len(splits) // batch_size + (1 if len(splits) % batch_size != 0 else 0)
 
-# 벡터 DB 로컬 저장 (index_qwen.faiss)
+# 새로운 FAISS 인덱스 생성
+index = None
+all_metadatas = []
+
+for i in range(num_batches):
+    batch = splits[i * batch_size : (i + 1) * batch_size]
+    print(f"배치 {i+1}/{num_batches} - {len(batch)}개 청크 벡터화 중...")
+
+    start_time = time.time()  
+    vectorstore = FAISS.from_documents(documents=batch, embedding=qwen_embeddings)
+    end_time = time.time()
+    print(f"벡터화 완료 (소요 시간: {end_time - start_time:.2f}초)")
+
+    # 기존 인덱스와 병합
+    if index is None:
+        index = vectorstore.index
+        all_metadatas.extend(vectorstore.docstore._dict.values())  
+    else:
+        index.merge_from(vectorstore.index)
+        all_metadatas.extend(vectorstore.docstore._dict.values())  
+
+    # 중간 저장
+    faiss.write_index(index, index_qwen_path)
+    vectorstore.save_local(vector_db_path, index_name="index_qwen")
+    print(f"중간 저장 완료: {index_qwen_path}, {pkl_qwen_path}")
+
+# 최종 벡터 DB 저장
+faiss.write_index(index, index_qwen_path)
 vectorstore.save_local(vector_db_path, index_name="index_qwen")
-
-print(f"벡터 DB 저장 완료: {os.path.join(vector_db_path, 'index_qwen.faiss')}")
+print(f"최종 벡터 DB 저장 완료: {index_qwen_path}, {pkl_qwen_path}")
 
 # 저장된 벡터 DB의 차원 확인
-index_path = os.path.join(vector_db_path, "index_qwen.faiss")
-
-if os.path.exists(index_path):
-    index = faiss.read_index(index_path)
-    print(f"FAISS 벡터 차원: {index.d}")  # 768이어야 정상
+if os.path.exists(index_qwen_path):
+    index = faiss.read_index(index_qwen_path)
+    print(f"FAISS 벡터 차원: {index.d}")  
 else:
-    print(f"FAISS 인덱스 파일을 찾을 수 없습니다: {index_path}")
+    print(f"FAISS 인덱스 파일을 찾을 수 없습니다: {index_qwen_path}")
