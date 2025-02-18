@@ -1,3 +1,6 @@
+# conda activate /workspace/robotpet
+# python /workspace/models/llm/02_save_vector_db_qwen-gpu.py
+
 import os
 import faiss
 import pickle
@@ -7,16 +10,12 @@ from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 
-# 현재 스크립트 파일 기준으로 BASE_DIR 설정
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-# 파일 경로 설정
-csv_file_path = os.path.normpath(os.path.join(BASE_DIR, "data", "total_kor_counsel_bot_clean.csv"))
-vector_db_path = os.path.normpath(os.path.join(BASE_DIR, "data", "db", "faiss"))
+csv_file_path = os.path.join(BASE_DIR, "data", "total_kor_counsel_bot_clean.csv")
+vector_db_path = os.path.join(BASE_DIR, "data", "db", "faiss")
 index_qwen_faiss = os.path.join(vector_db_path, "index_qwen.faiss")
 index_qwen_pkl = os.path.join(vector_db_path, "index_qwen.pkl")
 
-# CSV 파일 로드
 loader = CSVLoader(file_path=csv_file_path, encoding="utf-8")
 data = loader.load()
 print(f"{len(data)}개의 상담 데이터 로드 완료.")
@@ -26,12 +25,15 @@ text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=10
 splits = text_splitter.split_documents(data)
 print(f"데이터 분할 완료: 총 {len(splits)}개의 청크 생성됨.")
 
-# Qwen2.5-3B 모델에 맞는 임베딩 (768차원)
+# Qwen2.5-3B-Instruct 모델 임베딩 사용
 qwen_embeddings = HuggingFaceEmbeddings(model_name="Qwen/Qwen2.5-3B-Instruct")
 
 # 배치 설정
 batch_size = 2000  
 num_batches = len(splits) // batch_size + (1 if len(splits) % batch_size != 0 else 0)
+
+# GPU 리소스 설정
+gpu_res = faiss.StandardGpuResources()
 
 # 기존 벡터 DB가 있으면 로드
 if os.path.exists(index_qwen_faiss) and os.path.exists(index_qwen_pkl):
@@ -40,6 +42,9 @@ if os.path.exists(index_qwen_faiss) and os.path.exists(index_qwen_pkl):
     
     with open(index_qwen_pkl, "rb") as f:
         stored_metadata = pickle.load(f)
+
+    # FAISS 인덱스를 GPU로 변환
+    index = faiss.index_cpu_to_gpu(gpu_res, 0, index)
 
     # 진행한 배치 개수 확인
     completed_batches = len(stored_metadata) // batch_size
@@ -63,21 +68,22 @@ for i in range(completed_batches, num_batches):
     # 기존 인덱스와 병합
     if index is None:
         index = vectorstore.index
+        index = faiss.index_cpu_to_gpu(gpu_res, 0, index)  # GPU로 변환
     else:
         index.merge_from(vectorstore.index)
 
     # 메타데이터 저장
     stored_metadata.extend([doc.metadata for doc in batch])
 
-    # 중간 저장 (중단 후 이어서 진행 가능)
-    faiss.write_index(index, index_qwen_faiss)
+    # 중간 저장 (중단 후 이어서 진행)
+    faiss.write_index(faiss.index_gpu_to_cpu(index), index_qwen_faiss)  # GPU → CPU로 변환 후 저장
     with open(index_qwen_pkl, "wb") as f:
         pickle.dump(stored_metadata, f)
 
     print(f"중간 저장 완료: {index_qwen_faiss}, {index_qwen_pkl}")
 
-# 최종 벡터 DB 저장
-faiss.write_index(index, index_qwen_faiss)
+# 최종 벡터 DB 저장 (GPU → CPU 변환 후 저장)
+faiss.write_index(faiss.index_gpu_to_cpu(index), index_qwen_faiss)
 with open(index_qwen_pkl, "wb") as f:
     pickle.dump(stored_metadata, f)
 
