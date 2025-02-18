@@ -3,6 +3,12 @@ Swagger UI: http://localhost:5000/api/docs
 Swagger JSON: http://localhost:5000/static/swagger.json  
 
 ## 구조 및 흐름
+1. 회원가입
+- 입력 검증 : 이메일 형식 검증, 비밀번호 규칙 검증, 사용자중복체크
+- 비밀번호 암호화 : bcrypt로 해싱
+- 회원가입 시 사용자 정보 db에 저장
+- jwt 토큰 발급 : access_token과 refresh_token을 발급
+- Redis에 Refresh Token 저장 : 토큰 만료 후 갱신
 
 ## 백엔드 실행 방법
 - 가상환경 생성
