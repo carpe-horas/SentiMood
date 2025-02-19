@@ -14,6 +14,7 @@ from app.services.auth_service import (
     validate_email,
     generate_token,
     request_password_reset,
+    verify_reset_password_token,
 )
 from jose import jwt
 from app.models.users import User
@@ -131,6 +132,10 @@ def verify_email_request():
         email = data.get("email")
         if not email:
             raise ValueError("이메일을 입력해야 합니다.")
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "이미 가입된 이메일입니다."}), 400
 
         # 인증 코드 반환을 위해 함수 호출
         response_data = send_verification_code_service(email)
@@ -303,4 +308,20 @@ def reset_password_route():
         return jsonify({"error": str(e)}), 400 
     except Exception as e:
         current_app.logger.error(f"Unexpected error in reset-password: {str(e)}")
+        return jsonify({"error": "서버 오류가 발생했습니다."}), 500
+    
+@auth_bp.route("/reset-password", methods=["GET"])
+def reset_password_page():
+    """
+    비밀번호 재설정 페이지 로드 (토큰 검증)
+    """
+    try:
+        token = request.args.get("token")
+        response = verify_reset_password_token(token)
+        return jsonify(response), 200
+    except ValueError as e:
+        current_app.logger.error(f"Reset password error: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in reset password: {str(e)}")
         return jsonify({"error": "서버 오류가 발생했습니다."}), 500

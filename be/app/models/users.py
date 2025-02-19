@@ -31,7 +31,6 @@ class User(db.Model):
         self.password_hash = hashed_password.decode("utf-8")  # 문자열로 변환하여 저장
 
 
-
     def check_password(self, password):
         """비밀번호 검증"""
         stored_hash = self.password_hash
@@ -43,7 +42,6 @@ class User(db.Model):
         # 입력된 비밀번호를 bcrypt 해싱 규칙에 맞춰 바이트로 변환 후 비교
         is_match = bcrypt.checkpw(password.encode("utf-8"), stored_hash)
 
-        # 디버깅 로그
         print(f"[DEBUG] 입력된 비밀번호: {password}")
         print(f"[DEBUG] 저장된 해시 값: {self.password_hash}")
         print(f"[DEBUG] bcrypt.checkpw 결과: {is_match}")
@@ -82,7 +80,7 @@ class UserProfile(db.Model):
     def __repr__(self):
         return f'<UserProfile {self.nickname}>'
 
-
+# 이 프로젝트에선 필요 없어 보임 -> redis 저장...
 class UserToken(db.Model):
     """사용자 토큰 관리 테이블"""
     __tablename__ = 'user_tokens'  

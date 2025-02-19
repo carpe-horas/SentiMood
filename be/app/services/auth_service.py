@@ -132,6 +132,11 @@ def send_verification_code_service(email):
     """
     if not validate_email(email):
         raise ValueError("유효하지 않은 이메일 형식입니다.")
+    
+    # 이미 가입된 이메일인지 다시 확인 (추가 방어 코드)
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        raise ValueError("이미 가입된 이메일입니다.")
 
     # 6자리 랜덤 숫자 코드 생성
     verification_code = str(random.randint(100000, 999999))
@@ -417,14 +422,14 @@ def request_password_reset(email):
     if not user:
         raise ValueError("해당 이메일을 사용하는 계정을 찾을 수 없습니다.")
 
-    # Redis에서 중복 요청 여부 확인 (30분 내 요청 제한)
+    # Redis에서 중복 요청 여부 확인 (5분 내 요청 제한)
     if r.exists(f"password_reset_request:{email}"):
         raise ValueError("비밀번호 재설정 요청이 너무 자주 발생했습니다. 잠시 후 다시 시도하세요.")
 
     token = jwt.encode(
         {
             "email": user.email,
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=30)
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5)
         },
         SECRET_KEY,
         algorithm="HS256"
@@ -434,22 +439,42 @@ def request_password_reset(email):
 
     msg = Message("비밀번호 재설정 요청", sender=MAIL_USERNAME, recipients=[email])
     msg.body = f"비밀번호를 재설정하려면 아래 링크를 클릭하세요:\n{reset_url}"
+    msg.html = f"""
+        <html>
+        <body>
+            <p>비밀번호를 재설정하려면 아래 버튼을 클릭하세요:</p>
+            <p>
+                <a href="{reset_url}" target="_blank" rel="noopener noreferrer"
+                    style="display:inline-block; padding:10px 20px; background-color:#3498db;
+                    color:#fff; text-decoration:none; border-radius:5px;">
+                    비밀번호 재설정
+                </a>
+            </p>
+            <p>또는 다음 링크를 복사하여 브라우저에 붙여넣으세요:</p>
+            <p><a href="{reset_url}" target="_blank" rel="noopener noreferrer">{reset_url}</a></p>
+        </body>
+        </html>
+    """
+
+
+    # msg = Message("비밀번호 재설정 요청", sender=MAIL_USERNAME, recipients=[email])
+    # msg.body = f"비밀번호를 재설정하려면 아래 링크를 클릭하세요:\n{reset_url}"
 
     try:
         mail.send(msg)
     except Exception as e:
         raise ValueError(f"이메일 전송 실패: {str(e)}")
 
-    # Redis에 비밀번호 재설정 요청 기록 저장 (30분 유지)
-    r.setex(f"password_reset_request:{email}", timedelta(minutes=30), "requested")
+    # Redis에 비밀번호 재설정 요청 기록 저장 (5분 유지)
+    r.setex(f"password_reset_request:{email}", timedelta(minutes=5), "requested")
 
     return {"message": "비밀번호 재설정 링크를 이메일로 전송했습니다."}
 
 def reset_password(token, email, new_password, confirm_password):
     """
-    비밀번호 변경 (토큰 검증 후 새로운 비밀번호 저장)
+    비밀번호 변경 (토큰 검증 후 새 비밀번호 저장)
 
-    :param token: 이메일 인증을 위한 JWT 토큰
+    :param token: JWT 토큰
     :param email: 사용자 이메일
     :param new_password: 새 비밀번호
     :param confirm_password: 비밀번호 확인
@@ -465,18 +490,19 @@ def reset_password(token, email, new_password, confirm_password):
     except JWTError:
         raise ValueError("유효하지 않은 토큰입니다.")
 
-    # 비밀번호 유효성 체크
-    validate_password(new_password)
-
     if new_password != confirm_password:
         raise ValueError("비밀번호가 일치하지 않습니다.")
 
-    # 비밀번호 변경
+    if len(new_password) < 8:
+        raise ValueError("비밀번호는 최소 8자 이상이어야 합니다.")
+
     user = User.query.filter_by(email=email).first()
     if not user:
         raise ValueError("사용자를 찾을 수 없습니다.")
 
-    user.password = new_password
+    # 비밀번호 해싱 후 저장
+    hashed_password = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    user.password_hash = hashed_password
     db.session.commit()
 
     return {"message": "비밀번호가 성공적으로 변경되었습니다."}
@@ -497,3 +523,21 @@ def refresh_token(refresh_token):
         raise ValueError("Refresh token has expired")
     except jwt.JWTError:
         raise ValueError("Invalid refresh token")
+    
+def verify_reset_password_token(token):
+    """
+    비밀번호 재설정 토큰 검증 로직
+
+    :param token: 클라이언트에서 제공한 JWT 토큰
+    :return: 유효한 경우 이메일 반환, 예외 발생 시 오류 메시지 반환
+    """
+    if not token:
+        raise ValueError("토큰이 제공되지 않았습니다.")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return {"message": "토큰이 유효합니다.", "email": payload["email"]}
+    except ExpiredSignatureError:
+        raise ValueError("토큰이 만료되었습니다.")
+    except JWTError:
+        raise ValueError("유효하지 않은 토큰입니다.")
