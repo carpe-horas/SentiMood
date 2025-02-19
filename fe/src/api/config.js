@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/auth'; // Flask 백엔드 주소
+const API_BASE_URL = 'http://localhost:5000/'; // Flask 백엔드 주소
 
 const api = axios.create({
   baseURL: API_BASE_URL,

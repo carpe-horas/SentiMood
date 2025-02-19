@@ -1,35 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signup } from '../api/auth';
-import api from '../api/config';
-import styled from 'styled-components';
-import Button from '../components/Button';
-import ErrorMessage from '../components/ErrorMessage';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { signup, verifyEmailRequest, verifyEmail } from "../api/auth";
+// import api from '../api/config';
+import styled from "styled-components";
+import Button from "../components/Button";
+import ErrorMessage from "../components/ErrorMessage";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  height: 80vh;
 `;
 
 const Title = styled.h2`
-  margin-bottom: 50px; /* 제목과 입력창 사이 간격*/
+  margin-bottom: 50px;
 `;
 
 const FormContainer = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  align-items: flex-start; 
+  align-items: flex-start;
   gap: 15px;
+`;
+
+const InputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 `;
 
 const EmailContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px; /* 입력창과 버튼 사이 간격 */
+  gap: 10px;
   width: 100%;
 `;
 
@@ -42,14 +47,14 @@ const Input = styled.input`
 `;
 
 const EmailInput = styled(Input)`
-  height: 40px; 
+  height: 40px;
 `;
 
 const EmailButton = styled(Button)`
   height: 40px;
-  padding: 0 20px; 
-  white-space: nowrap; 
-  flex-shrink: 0; /* 버튼이 줄어들지 않도록*/
+  padding: 0 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 
 const SignupButtonWrapper = styled.div`
@@ -58,59 +63,165 @@ const SignupButtonWrapper = styled.div`
 `;
 
 const SignupButton = styled(Button)`
-  width: 250px; 
-  margin-top: 20px; /* 회원가입 버튼과 입력창 사이 간격*/
+  width: 250px;
+  margin-top: 20px;
+`;
+
+const PasswordValidationText = styled.p`
+  font-size: 12px;
+  margin-top: 5px;
+  color: ${(props) => (props.valid ? "green" : "red")};
 `;
 
 const Signup = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordValidation, setPasswordValidation] = useState([]);
+  const [passwordMatch, setPasswordMatch] = useState(null);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // 이메일 인증 요청 & 상태 확인
-  const handleEmailVerification = async () => {
+  // 페이지 로딩 시 로컬스토리지 초기화
+  useEffect(() => {
+    console.log("컴포넌트 마운트, 이메일:", email);
+    // 페이지가 처음 로딩될 때만 로컬 스토리지 초기화
+    // localStorage.removeItem(`pending_user:${email}`);
+    // localStorage.removeItem(`verification_code:${email}`);
+  }, []);
+
+  // 비밀번호 유효성 검사
+  const validatePassword = (password) => {
+    const conditions = [];
+    if (password.length < 8)
+      conditions.push("비밀번호는 최소 8자 이상이어야 합니다.");
+    if (!/[A-Z]/.test(password)) conditions.push("대문자를 포함해야 합니다.");
+    if (!/[a-z]/.test(password)) conditions.push("소문자를 포함해야 합니다.");
+    if (!/[0-9]/.test(password)) conditions.push("숫자를 포함해야 합니다.");
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
+      conditions.push("특수문자를 포함해야 합니다.");
+    return conditions;
+  };
+
+  // 이메일 인증 요청
+  const handleEmailVerificationRequest = async () => {
     try {
-      if (!verificationSent) {
-        await api.post('/verify-email-request', { email });
-        setVerificationSent(true);
-        alert('이메일이 전송되었습니다. 인증 후 다시 시도해주세요.');
+      console.log("인증 요청 이메일:", email);
+      
+      // 응답 데이터(response.data)를 받아야 함
+      const responseData = await verifyEmailRequest(email);
+      console.log("서버 응답 데이터:", responseData);
+  
+      if (responseData.message === "이미 가입된 이메일입니다.") {
+          alert("이미 가입된 이메일입니다.");
+          setEmail("");
+          return;
+      }
+  
+      if (responseData.verificationCode) {
+          console.log("저장할 인증 코드:", responseData.verificationCode);
+          localStorage.setItem(`verification_code:${email}`, responseData.verificationCode);
+          console.log("저장 후 확인:", localStorage.getItem(`verification_code:${email}`));
+      } else {
+          console.log("서버에서 인증 코드를 받지 못함");
+      }
+  
+      setVerificationSent(true);
+      alert("이메일이 전송되었습니다. 인증 코드를 입력해주세요.");
+    } catch (error) {
+      console.error("이메일 인증 요청 실패:", error);
+      console.error("에러 상세:", error.response);
+      setError(error.response?.data?.error || "서버 오류");
+    }
+  };
+  
+
+
+
+const handleVerifyEmailCode = async () => {
+  try {
+      console.log("현재 이메일:", email);
+      console.log("입력된 인증 코드:", verificationCode);
+
+      const storedCode = localStorage.getItem(`verification_code:${email}`);
+      console.log("저장된 인증 코드:", storedCode);
+      console.log("localStorage 전체:", localStorage);
+
+      if (!storedCode) {
+          console.log("저장된 코드가 없음");
+          alert("인증 코드가 만료되었거나 존재하지 않습니다.");
+          return;
       }
 
-      // 이메일 인증 상태 확인
-      const response = await api.get(`/verify-email-status?email=${email}`);
-      if (response.data.verified) {
-        setIsEmailVerified(true);
-        alert('이메일 인증이 완료되었습니다.');
+      console.log("코드 비교:", {
+          stored: storedCode.trim(),
+          input: verificationCode.trim(),
+          isEqual: storedCode.trim() === verificationCode.trim(),
+      });
+
+      if (storedCode.trim() === verificationCode.trim()) {
+          await verifyEmail(email, verificationCode);
+          setIsEmailVerified(true);
+          alert("이메일 인증이 완료되었습니다.");
+
+          // 인증 성공 후 로컬스토리지에서 코드 삭제
+          localStorage.removeItem(`verification_code:${email}`);
       } else {
-        alert('아직 이메일 인증이 완료되지 않았습니다.');
+          alert("잘못된 인증 코드입니다.");
       }
-    } catch (error) {
-      setError(error.response?.data?.error || '서버 오류');
-    }
+  } catch (error) {
+      console.error("인증 확인 실패:", error);
+      console.error("에러 상세:", error.response);
+      alert(error.response?.data?.error || "서버 오류");
+  }
+};
+
+
+  // 비밀번호 입력 변경 시 유효성 검사
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordValidation(validatePassword(newPassword));
+  };
+
+  // 비밀번호 확인 입력 변경 시 검사
+  const handleConfirmPasswordChange = (e) => {
+    const newConfirmPassword = e.target.value;
+    setConfirmPassword(newConfirmPassword);
+    setPasswordMatch(newConfirmPassword === password);
   };
 
   // 회원가입 요청
   const handleSignup = async () => {
-    if (!isEmailVerified) {
-      alert('이메일 인증이 완료되지 않았습니다.');
+    if (!email || !password || !confirmPassword) {
+      alert("모든 항목을 입력해주세요.");
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
+    if (!isEmailVerified) {
+      alert("이메일 인증이 완료되지 않았습니다.");
+      return;
+    }
+
+    if (passwordValidation.length > 0) {
+      alert("비밀번호가 유효하지 않습니다.");
+      return;
+    }
+
+    if (!passwordMatch) {
+      alert("비밀번호가 일치하지 않습니다.");
       return;
     }
 
     try {
       await signup(email, password, confirmPassword);
-      alert('회원가입 성공! 로그인 페이지로 이동합니다.');
-      navigate('/login');
+      alert("회원가입 성공! 로그인 페이지로 이동합니다.");
+      navigate("/login");
     } catch (error) {
-      setError(error.response?.data?.error || '서버 오류');
+      setError(error.response?.data?.error || "서버 오류");
     }
   };
 
@@ -119,7 +230,7 @@ const Signup = () => {
       <Title>회원가입</Title>
 
       <FormContainer>
-        {/* 이메일 입력 & 인증 버튼을 한 줄로 정렬 */}
+        {/* 이메일 입력 & 인증 요청 버튼 */}
         <EmailContainer>
           <EmailInput
             type="email"
@@ -128,21 +239,83 @@ const Signup = () => {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isEmailVerified}
           />
-          <EmailButton onClick={handleEmailVerification} bgColor="#A3C6ED" hoverColor="#258DFB">
-            {verificationSent ? '이메일 인증 확인' : '이메일 인증 요청'}
+          <EmailButton
+            onClick={handleEmailVerificationRequest}
+            bgColor="#A3C6ED"
+            hoverColor="#258DFB"
+          >
+            {verificationSent ? "재전송" : "인증 요청"}
           </EmailButton>
         </EmailContainer>
 
-        {/* 이메일 인증과 상관없이 비밀번호 입력 가능 */}
-        <Input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Input type="password" placeholder="비밀번호 확인" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        {/* 인증 코드 입력 */}
+        {verificationSent && !isEmailVerified && (
+          <EmailContainer>
+            <EmailInput
+              type="text"
+              placeholder="인증 코드 입력"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+            />
+            <EmailButton
+              onClick={handleVerifyEmailCode}
+              bgColor="#A3C6ED"
+              hoverColor="#258DFB"
+            >
+              인증 확인
+            </EmailButton>
+          </EmailContainer>
+        )}
 
-        {/* 이메일 인증이 완료되지 않으면 회원가입 버튼 비활성화 */}
+        {/* 비밀번호 입력 */}
+        <InputContainer>
+          <Input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={handlePasswordChange}
+          />
+          {passwordValidation.map((msg, index) => (
+            <PasswordValidationText key={index} valid={false.toString()}>
+              {msg}
+            </PasswordValidationText>
+          ))}
+
+          {password && passwordValidation.length === 0 && (
+            <PasswordValidationText valid={true}>
+              안전한 비밀번호입니다.
+            </PasswordValidationText>
+          )}
+        </InputContainer>
+
+        {/* 비밀번호 확인 입력 */}
+        <InputContainer>
+          <Input
+            type="password"
+            placeholder="비밀번호 확인"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
+          />
+          {confirmPassword && (
+            <PasswordValidationText valid={passwordMatch}>
+              {passwordMatch
+                ? "비밀번호가 일치합니다."
+                : "비밀번호가 일치하지 않습니다."}
+            </PasswordValidationText>
+          )}
+        </InputContainer>
+
+        {/* 회원가입 버튼 */}
         <SignupButtonWrapper>
-          <SignupButton onClick={handleSignup} bgColor="#A3C6ED" hoverColor="#258DFB" disabled={!isEmailVerified}>
+          <SignupButton
+            onClick={handleSignup}
+            bgColor="#A3C6ED"
+            hoverColor="#258DFB"
+          >
             회원가입
           </SignupButton>
         </SignupButtonWrapper>
+
         <ErrorMessage message={error} />
       </FormContainer>
     </Container>

@@ -8,11 +8,12 @@ from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 from jose import jwt, ExpiredSignatureError, JWTError
 from flask_mail import Mail, Message
-from flask import current_app
-from app.models import db, User
+from flask import request, current_app
+from app.models import db, User, UserProfile, UserTime, UserLog
 import random
+from flask import jsonify
+from flask_jwt_extended import create_access_token, create_refresh_token
 
-# 환경 변수 불러오기 (없으면 기본값 사용)
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")  
@@ -23,7 +24,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))  
 
 mail = Mail()
-r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)  # Redis 설정
+r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)  
 
 def validate_password(password):
     """
@@ -55,19 +56,19 @@ def validate_email(email):
 
 def register_user(email, password, confirm_password):
     """
-    회원가입 처리 (중복 이메일 인증 요청 방지 추가)
+    회원가입 처리
 
     :param email: 사용자 이메일
     :param password: 비밀번호
     :param confirm_password: 비밀번호 확인
-    :raises ValueError: 유효하지 않은 이메일, 이미 존재하는 이메일, 비밀번호 불일치일 경우 예외 발생
+    :raises ValueError: 유효하지 않은 이메일, 이미 존재하는 이메일, 비밀번호 불일치 시 예외 발생
     :return: 회원가입 성공 메시지
     """
     if not validate_email(email):
         raise ValueError("유효하지 않은 이메일 형식입니다.")
 
     if User.query.filter_by(email=email).first():
-        raise ValueError("이미 존재하는 이메일입니다.")
+        raise ValueError("이미 가입된 이메일입니다.")
 
     if password != confirm_password:
         raise ValueError("비밀번호가 일치하지 않습니다.")
@@ -78,27 +79,48 @@ def register_user(email, password, confirm_password):
     if r.exists(f"email_verification_request:{email}"):
         raise ValueError("이메일 인증 요청이 이미 진행 중입니다. 잠시 후 다시 시도하세요.")
 
+    # 새 사용자 저장 (is_verified=True 로 설정)
+    # 평문 비밀번호를 넘겨서 모델의 setter가 해싱하도록
     user_id = str(uuid.uuid4())
-    new_user = User(email=email, user_id=user_id, is_verified=False)
-    new_user.password = password
+    new_user = User(email=email, user_id=user_id, password=password, is_verified=True)
 
     db.session.add(new_user)
     db.session.commit()
 
-    # Redis에 이메일 인증 요청 기록 저장 (10분 유지)
-    r.setex(f"email_verification_request:{email}", timedelta(minutes=10), "requested")
+    new_profile = UserProfile(user_id=user_id, nickname=email.split("@")[0])
+    new_user_time = UserTime(user_id=new_user.id)
 
-    send_verification_code_service(email)
+    db.session.add(new_profile)
+    db.session.add(new_user_time)
+    db.session.commit()
 
-    return {"message": "회원가입 요청이 완료되었습니다. 이메일을 확인하세요."}
+    send_welcome_email(email)
+
+    return {"message": "회원가입이 완료되었습니다."}
 
 
-    #### 추가로 생각할 부분 #############
-    # 이메일 전송 실패 처리 및 재시도 안내 로직
-    # 이메일 재전송 기능
-    # 약관 동의 및 개인정보 처리방침
-    # 인증 완료 후 자동으로 로그인
-    # 이메일 인증을 위한 토큰 유효 기간 관리
+def send_welcome_email(email):
+    """
+    회원가입 환영 이메일 전송
+
+    :param email: 사용자 이메일
+    """
+    subject = "회원가입을 환영합니다!"
+    body = (
+        "안녕하세요!\n\n"
+        "회원가입을 완료해 주셔서 감사합니다.\n"
+        "앞으로 다양한 서비스를 이용하실 수 있습니다.\n\n"
+        "궁금한 사항이 있다면 언제든지 문의해 주세요.\n\n"
+        "상담 챗봇팀 드림"
+    )
+
+    msg = Message(subject, sender=MAIL_USERNAME, recipients=[email])
+    msg.body = body
+
+    try:
+        mail.send(msg)
+    except Exception as e:
+        print(f"[ERROR] 환영 이메일 전송 실패: {str(e)}")  
 
 
 def send_verification_code_service(email):
@@ -106,24 +128,14 @@ def send_verification_code_service(email):
     이메일 인증 코드 생성 및 전송 (6자리 숫자 코드)
     
     :param email: 사용자 이메일
-    :raises ValueError: 이메일 형식이 올바르지 않거나, 인증 요청이 너무 빈번할 경우
-    :return: 성공 메시지
+    :return: 성공 메시지와 생성된 인증 코드를 담은 딕셔너리
     """
     if not validate_email(email):
         raise ValueError("유효하지 않은 이메일 형식입니다.")
 
-    # Redis에서 1분 내에 동일한 이메일로 인증 코드 요청이 있었는지 확인
-    if r.exists(f"verification_code_request:{email}"):
-        raise ValueError("인증 코드 요청이 너무 빈번합니다. 잠시 후 다시 시도하세요.")
-
     # 6자리 랜덤 숫자 코드 생성
     verification_code = str(random.randint(100000, 999999))
-
-    # Redis에 저장 (5분 동안 유효)
-    r.setex(f"verification_code:{email}", timedelta(minutes=5), verification_code)
-
-    # Redis에 요청 기록 (1분 동안 중복 요청 방지)
-    r.setex(f"verification_code_request:{email}", timedelta(minutes=1), "requested")
+    print(f"[DEBUG] 생성된 인증 코드: {verification_code}")  
 
     # 이메일 전송
     msg = Message("이메일 인증 코드", sender=MAIL_USERNAME, recipients=[email])
@@ -132,67 +144,60 @@ def send_verification_code_service(email):
     try:
         mail.send(msg)
     except Exception as e:
-        raise ValueError(f"이메일 전송 실패: {str(e)}")
+        print(f"[ERROR] 이메일 전송 실패: {str(e)}")  
+        raise ValueError(f"이메일 전송 실패: {str(e)}")  
 
-    return {"message": "인증 코드가 이메일로 전송되었습니다."}
+    # 딕셔너리 형태로 반환
+    return {
+        "message": "이메일이 전송되었습니다.",
+        "verificationCode": verification_code  # 프론트로 반환
+    }
 
 
 def verify_email_service(email, code):
     """
-    이메일 인증 코드 검증
-
+    이메일 인증 코드 검증 (로컬스토리지 활용)
+    
     :param email: 사용자 이메일
     :param code: 사용자가 입력한 인증 코드
-    :raises ValueError: 인증 코드가 만료되었거나 일치하지 않는 경우
     :return: 이메일 인증 성공 메시지
     """
-    stored_code = r.get(f"verification_code:{email}")
-
-    if not stored_code:
-        raise ValueError("인증 코드가 만료되었거나 요청되지 않았습니다.")
-
-    if stored_code.decode("utf-8") != code:
-        raise ValueError("잘못된 인증 코드입니다.")
-
-    # 인증 코드 검증 성공 시, Redis에서 삭제
-    r.delete(f"verification_code:{email}")
-
-    # DB에서 사용자 이메일 인증 상태 업데이트
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        raise ValueError("해당 이메일의 사용자가 존재하지 않습니다.")
-
-    user.is_verified = True
-    db.session.commit()
+    if not code:
+        raise ValueError("인증 코드가 입력되지 않았습니다.")
 
     return {"message": "이메일 인증이 완료되었습니다."}
 
-# def verify_email_token(token):
-#     """
-#     이메일 인증 처리
 
-#     :param token: 이메일 인증 토큰
-#     :raises ValueError: 유효하지 않은 또는 만료된 토큰일 경우 예외 발생
+# def verify_email_service(email, code):
+#     """
+#     이메일 인증 코드 검증
+
+#     :param email: 사용자 이메일
+#     :param code: 사용자가 입력한 인증 코드
+#     :raises ValueError: 인증 코드가 만료되었거나 일치하지 않는 경우
 #     :return: 이메일 인증 성공 메시지
 #     """
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-#         user_id = payload.get("user_id")
-#     except ExpiredSignatureError:
-#         raise ValueError("이메일 인증 토큰이 만료되었습니다.")
-#     except JWTError:
-#         raise ValueError("유효하지 않은 토큰입니다.")
+#     stored_code = r.get(f"verification_code:{email}")
 
-#     # DB에서 사용자 검색
-#     user = User.query.filter_by(user_id=user_id).first()
+#     if not stored_code:
+#         raise ValueError("인증 코드가 만료되었거나 요청되지 않았습니다.")
+
+#     if stored_code.decode("utf-8") != code:
+#         raise ValueError("잘못된 인증 코드입니다.")
+
+#     # 인증 코드 검증 성공 시, Redis에서 삭제
+#     r.delete(f"verification_code:{email}")
+
+#     # DB에서 사용자 이메일 인증 상태 업데이트
+#     user = User.query.filter_by(email=email).first()
 #     if not user:
-#         raise ValueError("해당 사용자를 찾을 수 없습니다.")
+#         raise ValueError("해당 이메일의 사용자가 존재하지 않습니다.")
 
-#     # 이메일 인증 완료 (`is_verified=True`)
 #     user.is_verified = True
 #     db.session.commit()
 
-#     return {"message": "이메일 인증이 완료되었습니다. 이제 로그인이 가능합니다."}
+#     return {"message": "이메일 인증이 완료되었습니다."}
+
 
 def verify_email_status_service(email):
     """
@@ -208,23 +213,60 @@ def verify_email_request_service(email):
     """
     이메일 인증 요청 처리
     """
-    if not validate_email(email):
-        raise ValueError("유효하지 않은 이메일 형식입니다.")
+    try:
+        # 이메일이 DB에 존재하는지 확인
+        user = User.query.filter_by(email=email).first()
+        if user:
+            raise ValueError("이미 등록된 이메일입니다.")  
+        
+        # 인증 코드 생성 및 전송
+        send_verification_code_service(email)  
 
-    if r.exists(f"pending_user:{email}"):
-        raise ValueError("이미 이메일 인증 요청이 진행 중입니다. 잠시 후 다시 시도하세요.")
+        return {"message": "이메일이 전송되었습니다. 인증 후 다시 확인해주세요."}
 
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        user = User(email=email, is_verified=False)
-        db.session.add(user)
-        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"이메일 인증 요청 처리 중 오류: {str(e)}")
+        raise e
 
-    r.setex(f"pending_user:{email}", timedelta(minutes=60), json.dumps({"email": email}))
 
-    send_verification_code_service(email)
+# def verify_email_request_service(email):
+#     """
+#     이메일 인증 요청 처리
+#     """
+#     try:
+#         # 이메일이 DB에 존재하는지 확인
+#         user = User.query.filter_by(email=email).first()
+#         if user:
+#             raise ValueError("이미 등록된 이메일입니다.")  # 이메일이 이미 존재하면 예외 발생
+        
+#         # Redis에서 인증 요청이 진행 중인지 확인
+#         if r.exists(f"pending_user:{email}"):
+#             # Redis에서 이미 요청된 이메일 삭제
+#             print(f"기존 인증 요청이 있으면 Redis에서 키를 삭제하려고 시도: pending_user:{email}")
+#             r.delete(f"pending_user:{email}")  # 이미 요청된 이메일은 삭제
+#             print(f"기존 인증 요청 키 삭제 완료: pending_user:{email}")
+#             raise ValueError("이미 이메일 인증 요청이 진행 중입니다. 잠시 후 다시 시도하세요.")
+        
+#         # 새로운 사용자 추가
+#         new_user = User(email=email, is_verified=False)
+#         db.session.add(new_user)
+#         db.session.commit()
 
-    return {"message": "이메일이 전송되었습니다. 인증 후 다시 확인해주세요."}
+#         # Redis에 인증 요청 정보 저장 (1분 동안 유효)
+#         print(f"새 인증 요청 저장: pending_user:{email}")
+#         r.setex(f"pending_user:{email}", timedelta(minutes=1), json.dumps({"email": email}))
+
+#         print(f"인증 요청 저장 완료: pending_user:{email}")
+        
+#         # 이메일 인증 코드 전송
+#         send_verification_code_service(email)
+
+#         return {"message": "이메일이 전송되었습니다. 인증 후 다시 확인해주세요."}
+
+#     except Exception as e:
+#         current_app.logger.error(f"이메일 인증 요청 처리 중 오류: {str(e)}")
+#         raise e
+
 
 def logout_service(access_token):
     """
@@ -245,6 +287,7 @@ def logout_service(access_token):
 
     return {"message": "로그아웃이 완료되었습니다."}
 
+
 def authenticate_user(email, password):
     """
     사용자 로그인 처리
@@ -252,26 +295,49 @@ def authenticate_user(email, password):
     :param email: 사용자 이메일
     :param password: 비밀번호
     :raises ValueError: 이메일 또는 비밀번호가 잘못되었을 경우 예외 발생
-    :raises ValueError: 탈퇴한 계정일 경우 예외 발생
+    :raises ValueError: 이메일 인증이 완료되지 않은 경우 예외 발생
     :return: 액세스 토큰 및 리프레시 토큰
     """
-    # 이메일로 사용자 조회
-    user = User.query.filter_by(email=email, deleted_at=None).first()
+    if not email or not password:
+        raise ValueError("이메일과 비밀번호를 입력해야 합니다.")
 
-    # 사용자 없거나 비밀번호가 틀린 경우 예외 발생
-    if not user or not user.check_password(password):  # bcrypt.checkpw() 대신 check_password() 사용
+    # 이메일로 사용자 조회
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        print("[DEBUG] 사용자를 찾을 수 없음! (해당 이메일이 DB에 없음)")
+        raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다.")
+    
+    print(f"[DEBUG] 조회된 사용자: {user.email}, 인증 상태: {user.is_verified}")
+
+    is_password_correct = user.check_password(password)
+    print(f"[DEBUG] 비밀번호 검증 결과: {is_password_correct}")
+
+    if not is_password_correct: 
+        print(f"[DEBUG] 저장된 비밀번호 해시: {user.password_hash}")
+        print(f"[DEBUG] 입력된 비밀번호: {password}")
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다.")
 
-    # 탈퇴한 계정인지 확인
-    if user.status == "deleted":
-        raise ValueError("탈퇴한 계정입니다. 로그인할 수 없습니다.")
-
-    # 이메일 인증 여부 확인
     if not user.is_verified:
         raise ValueError("이메일 인증이 완료되지 않았습니다. 이메일을 확인하세요.")
+    
+    print("[DEBUG] 비밀번호 검증 성공!")
 
-    # 토큰 생성
-    return generate_tokens(user.user_id)
+    # JWT 토큰 생성
+    access_token = create_access_token(identity=user.user_id)  
+    refresh_token = create_refresh_token(identity=user.user_id)
+
+    # 로그인 기록 추가 (IP 포함)
+    try:
+        user_log = UserLog(user_id=user.user_id, action="login", ip_address=request.remote_addr)
+        db.session.add(user_log)
+        db.session.commit()  
+        print("[DEBUG] 로그인 로그 저장 완료!")
+    except Exception as e:
+        db.session.rollback()  
+        print(f"[ERROR] 로그인 로그 저장 실패: {str(e)}")
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
 
 
 def generate_tokens(user_id: str, access_token_expiry: int = 15, refresh_token_expiry: int = 60 * 24 * 7) -> tuple:
@@ -297,7 +363,6 @@ def generate_tokens(user_id: str, access_token_expiry: int = 15, refresh_token_e
         return access_token, refresh_token
     except Exception as e:
         raise ValueError(f"토큰 생성 중 오류 발생: {str(e)}")
-
 
 def generate_token(user_id: str, expiration_minutes: int) -> str:
     """
@@ -329,7 +394,7 @@ def verify_token(token):
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload["user_id"]
 
-        # Redis에서 해당 사용자의 저장된 토큰 확인 (로그아웃된 경우 예외 발생)
+        # Redis에서 해당 사용자의 저장된 토큰 확인 
         stored_token = r.get(f"access_token_{user_id}")
         if not stored_token or stored_token.decode("utf-8") != token:
             raise ValueError("로그아웃된 사용자입니다. 다시 로그인해주세요.")

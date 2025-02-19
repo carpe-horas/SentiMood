@@ -1,14 +1,18 @@
 import styled from 'styled-components';
 
-const StyledButton = styled.button`
+const StyledButton = styled.button.attrs((props) => ({
+  // props로 받은 bgColor, hoverColor를 그대로 적용
+  style: {
+    backgroundColor: props.bgColor || '#A3C6ED',
+    color: props.color || 'white',
+    fontSize: props.size || '16px',
+    transition: 'background 0.3s',
+  }
+}))`
   padding: 10px 15px;
-  background-color: ${(props) => props.bgColor || '#A3C6ED'};
-  color: ${(props) => props.color || 'white'};
-  font-size: ${(props) => props.size || '16px'};
   border: none;
   border-radius: 5px;
-  transition: background 0.3s;
-  
+
   &:hover {
     background-color: ${(props) => props.hoverColor || '#258DFB'};
   }
