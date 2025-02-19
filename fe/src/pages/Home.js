@@ -8,9 +8,9 @@ import styled from 'styled-components';
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center;  
   justify-content: center;
-  height: 50vh;
+  height: 40vh;
 `;
 
 const Home = () => {
@@ -36,7 +36,7 @@ const Home = () => {
 
   return (
     <Container>
-      <h2>홈 화면</h2>
+      <h1>홈 화면</h1>
       <p>채팅, 달력(다이어리), 설정</p>
     </Container>
   );

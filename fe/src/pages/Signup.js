@@ -5,13 +5,15 @@ import { signup, verifyEmailRequest, verifyEmail } from "../api/auth";
 import styled from "styled-components";
 import Button from "../components/Button";
 import ErrorMessage from "../components/ErrorMessage";
+import { validatePassword, checkPasswordMatch } from "../utils/validation";
+import Spinner from "../components/Spinner";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 80vh;
+  height: 60vh;
 `;
 
 const Title = styled.h2`
@@ -73,6 +75,7 @@ const PasswordValidationText = styled.p`
   color: ${(props) => (props.valid ? "green" : "red")};
 `;
 
+
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -84,6 +87,8 @@ const Signup = () => {
   const [passwordMatch, setPasswordMatch] = useState(null);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [isEmailLoading, setIsEmailLoading] = useState(false); 
+  const [isSignupLoading, setIsSignupLoading] = useState(false); 
 
   // 페이지 로딩 시 로컬스토리지 초기화
   useEffect(() => {
@@ -91,58 +96,56 @@ const Signup = () => {
     // 페이지가 처음 로딩될 때만 로컬 스토리지 초기화
     // localStorage.removeItem(`pending_user:${email}`);
     // localStorage.removeItem(`verification_code:${email}`);
-  }, []);
-
-  // 비밀번호 유효성 검사
-  const validatePassword = (password) => {
-    const conditions = [];
-    if (password.length < 8)
-      conditions.push("비밀번호는 최소 8자 이상이어야 합니다.");
-    if (!/[A-Z]/.test(password)) conditions.push("대문자를 포함해야 합니다.");
-    if (!/[a-z]/.test(password)) conditions.push("소문자를 포함해야 합니다.");
-    if (!/[0-9]/.test(password)) conditions.push("숫자를 포함해야 합니다.");
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
-      conditions.push("특수문자를 포함해야 합니다.");
-    return conditions;
-  };
+  }, [email]);
 
   // 이메일 인증 요청
   const handleEmailVerificationRequest = async () => {
     try {
+      setIsEmailLoading(true);
+      setError("");
+
       console.log("인증 요청 이메일:", email);
-      
-      // 응답 데이터(response.data)를 받아야 함
+
+      // 백엔드에 이메일 인증 요청
       const responseData = await verifyEmailRequest(email);
       console.log("서버 응답 데이터:", responseData);
-  
-      if (responseData.message === "이미 가입된 이메일입니다.") {
-          alert("이미 가입된 이메일입니다.");
-          setEmail("");
-          return;
+
+      // 이미 가입된 이메일이면 처리
+      if (responseData.error === "이미 가입된 이메일입니다.") {
+        alert("이미 가입된 이메일입니다.");
+        setEmail("");
+        return;
       }
-  
+
+      // 인증 코드가 정상적으로 왔을 때 처리
       if (responseData.verificationCode) {
-          console.log("저장할 인증 코드:", responseData.verificationCode);
-          localStorage.setItem(`verification_code:${email}`, responseData.verificationCode);
-          console.log("저장 후 확인:", localStorage.getItem(`verification_code:${email}`));
+        console.log("저장할 인증 코드:", responseData.verificationCode);
+        localStorage.setItem(
+          `verification_code:${email}`,
+          responseData.verificationCode
+        );
+        console.log(
+          "저장 후 확인:",
+          localStorage.getItem(`verification_code:${email}`)
+        );
       } else {
-          console.log("서버에서 인증 코드를 받지 못함");
+        console.log("서버에서 인증 코드를 받지 못함");
+        setError("서버 오류: 인증 코드가 없습니다.");
+        return;
       }
-  
+
       setVerificationSent(true);
       alert("이메일이 전송되었습니다. 인증 코드를 입력해주세요.");
     } catch (error) {
       console.error("이메일 인증 요청 실패:", error);
-      console.error("에러 상세:", error.response);
       setError(error.response?.data?.error || "서버 오류");
+    } finally {
+      setIsEmailLoading(false);
     }
   };
-  
 
-
-
-const handleVerifyEmailCode = async () => {
-  try {
+  const handleVerifyEmailCode = async () => {
+    try {
       console.log("현재 이메일:", email);
       console.log("입력된 인증 코드:", verificationCode);
 
@@ -151,34 +154,33 @@ const handleVerifyEmailCode = async () => {
       console.log("localStorage 전체:", localStorage);
 
       if (!storedCode) {
-          console.log("저장된 코드가 없음");
-          alert("인증 코드가 만료되었거나 존재하지 않습니다.");
-          return;
+        console.log("저장된 코드가 없음");
+        alert("인증 코드가 만료되었거나 존재하지 않습니다.");
+        return;
       }
 
       console.log("코드 비교:", {
-          stored: storedCode.trim(),
-          input: verificationCode.trim(),
-          isEqual: storedCode.trim() === verificationCode.trim(),
+        stored: storedCode.trim(),
+        input: verificationCode.trim(),
+        isEqual: storedCode.trim() === verificationCode.trim(),
       });
 
       if (storedCode.trim() === verificationCode.trim()) {
-          await verifyEmail(email, verificationCode);
-          setIsEmailVerified(true);
-          alert("이메일 인증이 완료되었습니다.");
+        await verifyEmail(email, verificationCode);
+        setIsEmailVerified(true);
+        alert("이메일 인증이 완료되었습니다.");
 
-          // 인증 성공 후 로컬스토리지에서 코드 삭제
-          localStorage.removeItem(`verification_code:${email}`);
+        // 인증 성공 후 로컬스토리지에서 코드 삭제
+        localStorage.removeItem(`verification_code:${email}`);
       } else {
-          alert("잘못된 인증 코드입니다.");
+        alert("잘못된 인증 코드입니다.");
       }
-  } catch (error) {
+    } catch (error) {
       console.error("인증 확인 실패:", error);
       console.error("에러 상세:", error.response);
       alert(error.response?.data?.error || "서버 오류");
-  }
-};
-
+    }
+  };
 
   // 비밀번호 입력 변경 시 유효성 검사
   const handlePasswordChange = (e) => {
@@ -191,7 +193,7 @@ const handleVerifyEmailCode = async () => {
   const handleConfirmPasswordChange = (e) => {
     const newConfirmPassword = e.target.value;
     setConfirmPassword(newConfirmPassword);
-    setPasswordMatch(newConfirmPassword === password);
+    setPasswordMatch(checkPasswordMatch(password, newConfirmPassword));
   };
 
   // 회원가입 요청
@@ -216,12 +218,16 @@ const handleVerifyEmailCode = async () => {
       return;
     }
 
+    setIsSignupLoading(true); 
+
     try {
       await signup(email, password, confirmPassword);
       alert("회원가입 성공! 로그인 페이지로 이동합니다.");
       navigate("/login");
     } catch (error) {
-      setError(error.response?.data?.error || "서버 오류");
+      setError(error.response?.data?.error || "회원가입 실패");
+    } finally {
+      setIsSignupLoading(false); 
     }
   };
 
@@ -239,13 +245,17 @@ const handleVerifyEmailCode = async () => {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isEmailVerified}
           />
-          <EmailButton
-            onClick={handleEmailVerificationRequest}
-            bgColor="#A3C6ED"
-            hoverColor="#258DFB"
-          >
-            {verificationSent ? "재전송" : "인증 요청"}
-          </EmailButton>
+          {isEmailLoading ? (
+            <Spinner />
+          ) : (
+            <EmailButton
+              onClick={handleEmailVerificationRequest}
+              bgColor="#A3C6ED"
+              hoverColor="#258DFB"
+            >
+              {verificationSent ? "재전송" : "인증 요청"}
+            </EmailButton>
+          )}
         </EmailContainer>
 
         {/* 인증 코드 입력 */}
@@ -307,15 +317,18 @@ const handleVerifyEmailCode = async () => {
 
         {/* 회원가입 버튼 */}
         <SignupButtonWrapper>
-          <SignupButton
-            onClick={handleSignup}
-            bgColor="#A3C6ED"
-            hoverColor="#258DFB"
-          >
-            회원가입
-          </SignupButton>
+          {isSignupLoading ? (
+            <Spinner />
+          ) : (
+            <SignupButton
+              onClick={handleSignup}
+              bgColor="#A3C6ED"
+              hoverColor="#258DFB"
+            >
+              회원가입
+            </SignupButton>
+          )}
         </SignupButtonWrapper>
-
         <ErrorMessage message={error} />
       </FormContainer>
     </Container>

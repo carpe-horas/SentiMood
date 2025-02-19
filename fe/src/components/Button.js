@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 const StyledButton = styled.button.attrs((props) => ({
-  // props로 받은 bgColor, hoverColor를 그대로 적용
+  // props로 받은 bgColor, hoverColor 그대로 적용
   style: {
     backgroundColor: props.bgColor || '#A3C6ED',
     color: props.color || 'white',
