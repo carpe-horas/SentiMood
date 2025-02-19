@@ -34,13 +34,13 @@ def validate_password(password):
     """
     if len(password) < 8:
         raise ValueError("비밀번호는 최소 8자 이상이어야 합니다.")
-    if not any(c.isupper() for c in password):  # 대문자 포함 여부 확인
+    if not any(c.isupper() for c in password):  
         raise ValueError("비밀번호에 최소 하나의 대문자가 포함되어야 합니다.")
-    if not any(c.islower() for c in password):  # 소문자 포함 여부 확인
+    if not any(c.islower() for c in password):  
         raise ValueError("비밀번호에 최소 하나의 소문자가 포함되어야 합니다.")
-    if not any(c.isdigit() for c in password):  # 숫자 포함 여부 확인
+    if not any(c.isdigit() for c in password):  
         raise ValueError("비밀번호에 최소 하나의 숫자가 포함되어야 합니다.")
-    if not any(c in "@$!%*?&" for c in password):  # 특수문자 포함 여부 확인
+    if not any(c in "@$!%*?&" for c in password):  
         raise ValueError("비밀번호에 최소 하나의 특수문자가 포함되어야 합니다.")
 
 def validate_email(email):
@@ -79,9 +79,9 @@ def register_user(email, password, confirm_password):
         raise ValueError("이메일 인증 요청이 이미 진행 중입니다. 잠시 후 다시 시도하세요.")
 
     user_id = str(uuid.uuid4())
-    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    new_user = User(email=email, user_id=user_id, is_verified=False)
+    new_user.password = password
 
-    new_user = User(email=email, user_id=user_id, password_hash=hashed_password, is_verified=False)
     db.session.add(new_user)
     db.session.commit()
 
@@ -91,6 +91,7 @@ def register_user(email, password, confirm_password):
     send_verification_code_service(email)
 
     return {"message": "회원가입 요청이 완료되었습니다. 이메일을 확인하세요."}
+
 
     #### 추가로 생각할 부분 #############
     # 이메일 전송 실패 처리 및 재시도 안내 로직
@@ -255,10 +256,10 @@ def authenticate_user(email, password):
     :return: 액세스 토큰 및 리프레시 토큰
     """
     # 이메일로 사용자 조회
-    user = User.query.filter_by(email=email, is_deleted=False).first()
+    user = User.query.filter_by(email=email, deleted_at=None).first()
 
     # 사용자 없거나 비밀번호가 틀린 경우 예외 발생
-    if not user or not bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
+    if not user or not user.check_password(password):  # bcrypt.checkpw() 대신 check_password() 사용
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다.")
 
     # 탈퇴한 계정인지 확인
@@ -400,7 +401,7 @@ def reset_password(token, email, new_password, confirm_password):
         raise ValueError("유효하지 않은 토큰입니다.")
 
     # 비밀번호 유효성 체크
-    validate_password(new_password)  # 기존 `validate_password` 함수 활용
+    validate_password(new_password)
 
     if new_password != confirm_password:
         raise ValueError("비밀번호가 일치하지 않습니다.")
@@ -410,9 +411,24 @@ def reset_password(token, email, new_password, confirm_password):
     if not user:
         raise ValueError("사용자를 찾을 수 없습니다.")
 
-    # 해싱 후 저장
-    hashed_password = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    user.password_hash = hashed_password
+    user.password = new_password
     db.session.commit()
 
     return {"message": "비밀번호가 성공적으로 변경되었습니다."}
+
+def refresh_token(refresh_token):
+    """
+    리프레시 토큰 검증 및 새로운 액세스 토큰 발급 (수정됨)
+
+    :param refresh_token: 사용자 리프레시 토큰
+    :raises ValueError: 유효하지 않은 토큰일 경우 예외 발생
+    :return: 새 액세스 토큰
+    """
+    try:
+        decoded_token = verify_token(refresh_token)
+        access_token, _ = generate_tokens(decoded_token["user_id"])
+        return {"access_token": access_token}
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Refresh token has expired")
+    except jwt.JWTError:
+        raise ValueError("Invalid refresh token")

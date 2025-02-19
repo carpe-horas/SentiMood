@@ -27,7 +27,7 @@ flask run
 ```
 
 ## redis 다운로드 필요
-1. 최신 .msi 설치 파일 다운로드
+1. 최신 파일 다운로드
 ```
 https://github.com/microsoftarchive/redis/releases
 ```
@@ -44,7 +44,7 @@ redis-cli
 ```
 ping
 ```
-6. redis-server.exe로도 실행 가능(mysql 워크벤치처럼 켜놓키만 하면 됩니다.)
+6. redis-server.exe 실행(mysql 워크벤치처럼 켜놓키만 하면 됩니다.)
 
 
 ## .env 내용
