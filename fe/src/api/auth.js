@@ -1,7 +1,9 @@
 import api from './config';
 import Cookies from 'js-cookie';
 
-// 회원가입 API
+/**
+ * 회원가입 API
+ */
 export const signup = async (email, password, confirmPassword) => {
   try {
     const response = await api.post('/auth/register', {
@@ -16,7 +18,9 @@ export const signup = async (email, password, confirmPassword) => {
   }
 };
 
-// 로그인 API
+/**
+ * 로그인 API
+ */
 export const login = async (email, password, rememberMe) => {
   try {
     const response = await api.post('/auth/login', {
@@ -40,14 +44,18 @@ export const login = async (email, password, rememberMe) => {
   }
 };
 
-// 로그인 상태 확인 함수
+/**
+ * 로그인 상태 확인 함수
+ */
 export const isAuthenticated = () => {
   const accessToken = localStorage.getItem('access_token') || Cookies.get('access_token');
   return !!accessToken; // 액세스 토큰이 있으면 로그인 상태
 };
 
 
-// 로그아웃 API
+/**
+ * 로그아웃 API
+ */
 export const logout = async () => {
   try {
     const accessToken = Cookies.get('access_token') || localStorage.getItem('access_token');
@@ -67,7 +75,9 @@ export const logout = async () => {
 };
 
 
-// 토큰 갱신 (Refresh Token 사용)
+/**
+ * 토큰 갱신 (Refresh Token 사용)
+ */
 export const refreshAccessToken = async () => {
   try {
     const refreshToken = localStorage.getItem('refresh_token');
@@ -84,7 +94,9 @@ export const refreshAccessToken = async () => {
   }
 };
 
-// 이메일 인증 요청 (이메일 입력 후 요청)
+/**
+ * 이메일 인증 요청 (이메일 입력 후 요청)
+ */
 export const verifyEmailRequest = async (email) => {
   try {
     const response = await api.post('/auth/verify-email-request', { email });
@@ -95,7 +107,9 @@ export const verifyEmailRequest = async (email) => {
   }
 };
 
-// 이메일 인증 (6자리 코드 입력)
+/**
+ * 이메일 인증 (6자리 코드 입력)
+ */
 export const verifyEmail = async (email, code) => {
   try {
     const response = await api.post('/auth/verify-email', { email, code });
@@ -106,7 +120,9 @@ export const verifyEmail = async (email, code) => {
   }
 };
 
-// 이메일 인증 코드 재전송
+/**
+ * 이메일 인증 코드 재전송
+ */
 export const resendVerificationCode = async (email) => {
   try {
     const response = await api.post('/auth/resend-verification-code', { email });
@@ -117,7 +133,9 @@ export const resendVerificationCode = async (email) => {
   }
 };
 
-// 비밀번호 재설정 요청 (이메일 입력 후 요청)
+/**
+ * 비밀번호 재설정 요청 (이메일 입력 후 요청)
+ */
 export const resetPasswordRequest = async (email) => {
   try {
     const response = await api.post('/auth/request-password-reset', { email });
@@ -128,7 +146,9 @@ export const resetPasswordRequest = async (email) => {
   }
 };
 
-// 비밀번호 재설정 (토큰을 사용하여 새로운 비밀번호 설정)
+/**
+ * 비밀번호 재설정 페이지에서 토큰 검증 및 이메일 확인
+ */
 export const resetPassword = async (token, email, newPassword, confirmPassword) => {
   try {
     const response = await api.post('/auth/reset-password', {
@@ -144,7 +164,22 @@ export const resetPassword = async (token, email, newPassword, confirmPassword) 
   }
 };
 
-// 이메일 인증 상태 확인
+/**
+ * 비밀번호 재설정 페이지에서 토큰 검증 및 이메일 확인
+ */
+export const verifyResetToken = async (token) => {
+  try {
+    const response = await api.get(`/auth/reset-password?token=${token}`);
+    return response.data; // { email: "사용자 이메일" }
+  } catch (error) {
+    console.error('토큰 검증 실패:', error.response?.data?.error || error.message);
+    throw error;
+  }
+};
+
+/**
+ * 이메일 인증 상태 확인
+ */
 export const verifyEmailStatus = async (email) => {
   try {
     const response = await api.get(`/auth/verify-email-status?email=${email}`);
@@ -154,3 +189,5 @@ export const verifyEmailStatus = async (email) => {
     throw error;
   }
 };
+
+

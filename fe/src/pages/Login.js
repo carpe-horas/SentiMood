@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../api/auth';
-import useAuthStore from '../store/authStore';
-import styled from 'styled-components';
-import Button from '../components/Button';
-import Cookies from 'js-cookie';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../api/auth";
+import useAuthStore from "../store/authStore";
+import styled from "styled-components";
+import Button from "../components/Button";
+import Spinner from "../components/Spinner";
+
+const Title = styled.h2`
+  margin-bottom: 40px;
+`;
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 50vh;
+  height: 60vh;
 `;
 
 const Input = styled.input`
@@ -28,15 +32,46 @@ const CheckboxContainer = styled.div`
   margin: 5px;
 `;
 
+const ForgotPassword = styled.p`
+  margin-top: 10px;
+  font-size: 14px;
+  color: #98bde6;
+  cursor: pointer;
+
+  &:hover {
+    color: #0056b3;
+  }
+`;
+
+const LoginButtonWrapper = styled.div`
+  width: 250px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 15px;
+`;
+
+const LoginButton = styled(Button)`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const { login: setLogin } = useAuthStore();
+  const { setLogin } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
+      setIsLoading(true);
 
       console.log("[DEBUG] 로그인 요청 시작");
       console.log("[DEBUG] 입력된 이메일:", email);
@@ -47,33 +82,55 @@ const Login = () => {
 
       console.log("[DEBUG] 서버 응답:", response);
 
-      setLogin(); // Zustand 상태 변경
+      setLogin();
 
-      if (rememberMe) {
-        Cookies.set('access_token', response.access_token, { expires: 7 }); // 7일 유지
-        Cookies.set('refresh_token', response.refresh_token, { expires: 7 });
-      } else {
-        localStorage.setItem('access_token', response.access_token);
-        localStorage.setItem('refresh_token', response.refresh_token);
-      }
+      // Zustand 상태 업데이트 (토큰 저장)
+      setLogin(response.access_token, rememberMe);
+
+      alert("로그인 성공! 홈 화면으로 이동합니다.");
 
       console.log("[DEBUG] 로그인 성공, 홈 화면으로 이동");
-      navigate('/home');
+
+      navigate("/home");
     } catch (error) {
-      alert('로그인 실패: ' + (error.response?.data?.error || '서버 오류'));
+      alert("로그인 실패: " + (error.response?.data?.error || "서버 오류"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Container>
-      <h2>로그인</h2>
-      <Input type="email" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <Input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <Title>로그인</Title>
+      <Input
+        type="email"
+        placeholder="이메일"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        type="password"
+        placeholder="비밀번호"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
       <CheckboxContainer>
-        <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+        />
         <label>로그인 유지</label>
       </CheckboxContainer>
-      <Button onClick={handleLogin}>로그인</Button>
+      <LoginButtonWrapper>
+        <LoginButton onClick={handleLogin} disabled={isLoading}>
+          {isLoading ? <Spinner /> : "로그인"}
+        </LoginButton>
+      </LoginButtonWrapper>
+
+      <ForgotPassword onClick={() => navigate("/forgot-password")}>
+        비밀번호를 잊으셨나요?
+      </ForgotPassword>
     </Container>
   );
 };
