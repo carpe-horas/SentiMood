@@ -37,9 +37,18 @@ const Login = () => {
 
   const handleLogin = async () => {
     try {
+
+      console.log("[DEBUG] 로그인 요청 시작");
+      console.log("[DEBUG] 입력된 이메일:", email);
+      console.log("[DEBUG] 입력된 비밀번호:", password);
+      console.log("[DEBUG] 로그인 유지 상태:", rememberMe);
+
       const response = await login(email, password, rememberMe);
 
+      console.log("[DEBUG] 서버 응답:", response);
+
       setLogin(); // Zustand 상태 변경
+
       if (rememberMe) {
         Cookies.set('access_token', response.access_token, { expires: 7 }); // 7일 유지
         Cookies.set('refresh_token', response.refresh_token, { expires: 7 });
@@ -48,6 +57,7 @@ const Login = () => {
         localStorage.setItem('refresh_token', response.refresh_token);
       }
 
+      console.log("[DEBUG] 로그인 성공, 홈 화면으로 이동");
       navigate('/home');
     } catch (error) {
       alert('로그인 실패: ' + (error.response?.data?.error || '서버 오류'));

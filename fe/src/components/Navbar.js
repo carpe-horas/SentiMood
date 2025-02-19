@@ -29,13 +29,12 @@ const Navbar = () => {
         {isAuthenticated ? (
           <>
             <Button onClick={() => navigate('/home')}>홈</Button>
-            <Button onClick={logout} bgColor="red" hoverColor="darkred">로그아웃</Button>
+            <Button onClick={logout} style={{ backgroundColor: 'red', color: 'white' }}>로그아웃</Button>
           </>
         ) : (
           <>
             <Button onClick={() => navigate('/login')}>로그인</Button>
             <Button onClick={() => navigate('/signup')}>회원가입</Button>
-            {/* <Button onClick={() => navigate('/signup')} bgColor="green" hoverColor="darkgreen">회원가입</Button> */}
           </>
         )}
       </Menu>
