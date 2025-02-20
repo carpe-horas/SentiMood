@@ -3,7 +3,6 @@ import re
 import uuid
 import bcrypt
 import redis
-import json
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 from jose import jwt, ExpiredSignatureError, JWTError
@@ -13,6 +12,7 @@ from app.models import db, User, UserProfile, UserTime, UserLog
 import random
 from flask import jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token
+from app.database import mongo
 
 load_dotenv()
 
@@ -82,22 +82,35 @@ def register_user(email, password, confirm_password):
     # 새 사용자 저장 (is_verified=True 로 설정)
     # 평문 비밀번호를 넘겨서 모델의 setter가 해싱하도록
     user_id = str(uuid.uuid4())
-    new_user = User(email=email, user_id=user_id, password=password, is_verified=True)
 
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        new_user = User(email=email, user_id=user_id, password=password, is_verified=True)
 
-    new_profile = UserProfile(user_id=user_id, nickname=email.split("@")[0])
-    new_user_time = UserTime(user_id=new_user.id)
+        db.session.add(new_user)
+        db.session.commit()
 
-    db.session.add(new_profile)
-    db.session.add(new_user_time)
-    db.session.commit()
+        new_profile = UserProfile(user_id=user_id, nickname=email.split("@")[0])
+        new_user_time = UserTime(user_id=new_user.id)
 
-    send_welcome_email(email)
+        db.session.add(new_profile)
+        db.session.add(new_user_time)
+        db.session.commit()
 
-    return {"message": "회원가입이 완료되었습니다."}
+        # MongoDB에도 user_id 추가
+        mongo.db.user_sessions.insert_one({
+            "user_id": user_id,  
+        })
 
+        # Redis에서 중복 요청 제한 해제
+        r.delete(f"email_verification_request:{email}")
+
+        send_welcome_email(email)
+
+        return {"message": "회원가입이 완료되었습니다."}
+    except Exception as e:
+        db.session.rollback()  # MySQL 트랜잭션 롤백
+        mongo.db.user_sessions.delete_one({"user_id": user_id})  # MongoDB 롤백
+        raise ValueError(f"회원가입 중 오류 발생: {str(e)}")
 
 def send_welcome_email(email):
     """
@@ -290,6 +303,9 @@ def logout_service(access_token):
     r.setex(f"access_token_{user_id}", timedelta(seconds=1), "invalid")
     r.setex(f"refresh_token_{user_id}", timedelta(seconds=1), "invalid")
 
+    # MongoDB에서 해당 사용자의 로그인 세션 삭제
+    mongo.db.user_sessions.delete_one({"user_id": user_id})
+
     return {"message": "로그아웃이 완료되었습니다."}
 
 
@@ -332,7 +348,11 @@ def authenticate_user(email, password):
     access_token = create_access_token(identity=user.user_id)  
     refresh_token = create_refresh_token(identity=user.user_id)
 
-    # 로그인 기록 추가 (IP 포함)
+    # MongoDB에서 기존 로그인 세션 종료
+    mongo.db.user_sessions.delete_many({"user_id": user.user_id})  
+    mongo.db.user_sessions.insert_one({"user_id": user.user_id})
+
+    # MySQL에 로그인 기록 추가 (IP 포함)
     try:
         user_log = UserLog(user_id=user.user_id, action="login", ip_address=request.remote_addr)
         db.session.add(user_log)
@@ -341,6 +361,10 @@ def authenticate_user(email, password):
     except Exception as e:
         db.session.rollback()  
         print(f"[ERROR] 로그인 로그 저장 실패: {str(e)}")
+
+    # Redis에 토큰 저장
+    r.setex(f"access_token_{user.user_id}", timedelta(minutes=15), access_token)
+    r.setex(f"refresh_token_{user.user_id}", timedelta(days=7), refresh_token)
 
     return {"access_token": access_token, "refresh_token": refresh_token}
 

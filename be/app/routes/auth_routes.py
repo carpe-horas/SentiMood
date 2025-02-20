@@ -20,10 +20,8 @@ from jose import jwt
 from app.models.users import User
 import redis
 import os
-
 from werkzeug.security import generate_password_hash
-from app.database import db  
-
+from app.database import db, mongo
 
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")  
@@ -58,6 +56,13 @@ def register():
         return jsonify(response), 201
     except ValueError as e:
         current_app.logger.error(f"Registration error: {str(e)}")
+
+        # 회원가입 실패 시 MongoDB에서도 user_id 삭제 (롤백)
+        if "email" in data:
+            user = User.query.filter_by(email=data["email"]).first()
+            if user:
+                mongo.db.user_sessions.delete_one({"user_id": user.user_id})
+
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         current_app.logger.error(f"Unexpected error in registration: {str(e)}")
@@ -201,6 +206,12 @@ def login():
     try:
         data = request.get_json()
         response = authenticate_user(data["email"], data["password"])
+
+        # 로그인 후 MongoDB에 user_id만 남아 있는지 확인 
+        active_sessions = mongo.db.user_sessions.count_documents({"user_id": response["user_id"]})
+        if active_sessions > 1:
+            current_app.logger.warning(f"MongoDB에 중복된 로그인 세션 감지: user_id={response['user_id']}")
+
         return jsonify(response), 200
     except ValueError as e:
         current_app.logger.error(f"Login error: {str(e)}")
@@ -259,6 +270,11 @@ def logout():
     try:
         data = request.get_json()
         response = logout_service(data.get("access_token"))
+
+        # user_id의 모든 MongoDB 로그인 세션 삭제
+        user_id = verify_token(data.get("access_token"))["user_id"]
+        mongo.db.user_sessions.delete_many({"user_id": user_id})
+
         return jsonify(response), 200
     except ValueError as e:
         current_app.logger.error(f"Logout error: {str(e)}")
