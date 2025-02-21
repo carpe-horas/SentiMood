@@ -28,6 +28,12 @@ def create_app():
     # 데이터베이스 초기화
     init_db(app)
 
+    with app.app_context():
+        from app.database import mongo
+        if mongo.db is None:
+            raise RuntimeError("MongoDB 초기화 실패: `mongo.db`가 None입니다.")
+        print("MongoDB 연결 성공!") 
+
     # 모델 초기화
     init_models()
 

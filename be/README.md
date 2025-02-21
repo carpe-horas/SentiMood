@@ -138,6 +138,12 @@ REDIS_MAXMEMORY_POLICY=allkeys-lru
 │   ├── 📄 __init__.py                # Flask 애플리케이션 팩토리 함수 (create_app)
 ├── 📂 config/                     
 │   └── 📄 settings.py                # Flask 환경 변수 설정 (ActiveConfig)
+├── 📂 data/  
+│   ├── 📂 faiss/                     # FAISS 벡터 DB
+│   │   ├── 📄 index.faiss
+│   │   └── 📄 index.pkl
+│   ├── 📂 model/                     # 얼굴 감정 분석 모델
+│   │   └── 📄 TEST_1efficientnet_b2_model.keras
 ├── 📄 .env                           # 환경 변수
 ├── 📄 requirements.txt               
 ├── 📄 .gitignore                     
