@@ -47,7 +47,7 @@ class Config:
 class ProductionConfig(Config):
     """배포 환경 설정"""
     DEBUG = False
-    BASE_URL = os.getenv("PROD_BASE_URL", "https://your-production-domain.com")
+    BASE_URL = os.getenv("PROD_BASE_URL", "http://localhost:3000")
 
 
 class DevelopmentConfig(Config):
