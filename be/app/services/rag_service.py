@@ -16,13 +16,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-vector_db_path = os.path.join(BASE_DIR, "data", "faiss")
+# vector_db_path = os.path.join(BASE_DIR, "data", "faiss")
+vector_db_path = os.path.join(BASE_DIR, "data", "faiss_v2")
 
 try:
     vectorstore = FAISS.load_local(vector_db_path, OpenAIEmbeddings(), allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever()
+
     if retriever is None:
         raise RuntimeError("retriever가 None입니다. 벡터 DB 로드에 실패했을 가능성이 있습니다.")
+    print("FAISS 벡터 DB 로드 성공")
 except Exception as e:
     raise RuntimeError
 

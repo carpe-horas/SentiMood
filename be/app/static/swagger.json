@@ -31,6 +31,19 @@
             "description": "다이어리 API"
         }
     ],
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "JWT 토큰을 포함한 Authorization 헤더"
+        }
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
     "paths": {
         "/": {
             "get": {
@@ -379,7 +392,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "비밀번호 변경 성공"
+                        "description": "비밀번호 재설정 성공"
+                    },
+                    "400": {
+                        "description": "잘못된 요청 또는 토큰 불일치"
                     }
                 }
             },
@@ -709,6 +725,11 @@
                 ],
                 "summary": "새로운 챗봇 대화 저장",
                 "description": "사용자의 메시지를 받아 챗봇 응답을 저장",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "parameters": [
                     {
                         "name": "body",
@@ -721,7 +742,7 @@
                                     "type": "string",
                                     "example": "user_12345"
                                 },
-                                "session_id": {
+                                "chatroom_id": {
                                     "type": "string",
                                     "example": "user_12345_20240220153000"
                                 },
@@ -748,7 +769,7 @@
                             },
                             "required": [
                                 "user_id",
-                                "session_id",
+                                "chatroom_id",
                                 "user_message",
                                 "bot_response"
                             ]
@@ -777,16 +798,21 @@
                 }
             }
         },
-        "/chat/{session_id}": {
+        "/chat/{chatroom_id}": {
             "get": {
                 "tags": [
                     "chat"
                 ],
-                "summary": "특정 세션의 대화 기록 조회",
-                "description": "특정 세션의 대화 기록 반환",
+                "summary": "특정 채팅방의 대화 기록 조회",
+                "description": "특정 채팅방의 대화 기록 반환",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "parameters": [
                     {
-                        "name": "session_id",
+                        "name": "chatroom_id",
                         "in": "path",
                         "required": true,
                         "type": "string",
@@ -802,7 +828,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "세션의 대화 기록 반환",
+                        "description": "채팅방의 대화 기록 반환",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -822,7 +848,7 @@
                         }
                     },
                     "404": {
-                        "description": "해당 세션을 찾을 수 없음"
+                        "description": "해당 채팅방을 찾을 수 없음"
                     },
                     "500": {
                         "description": "서버 오류"
@@ -830,16 +856,21 @@
                 }
             }
         },
-        "/chat/{session_id}/end": {
+        "/chat/{chatroom_id}/end": {
             "put": {
                 "tags": [
                     "chat"
                 ],
-                "summary": "특정 세션의 대화 종료",
-                "description": "특정 세션을 종료 상태로 변경",
+                "summary": "특정 채팅방의 대화 종료",
+                "description": "특정 채팅방을 종료 상태로 변경",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "parameters": [
                     {
-                        "name": "session_id",
+                        "name": "chatroom_id",
                         "in": "path",
                         "required": true,
                         "type": "string",
@@ -848,13 +879,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "대화 세션이 종료됨",
+                        "description": "대화 채팅방이 종료됨",
                         "schema": {
                             "type": "object",
                             "properties": {
                                 "message": {
                                     "type": "string",
-                                    "example": "대화 세션이 종료되었습니다."
+                                    "example": "대화 채팅방이 종료되었습니다."
                                 }
                             }
                         }
@@ -903,39 +934,29 @@
                 }
             }
         },
-        "/chat/session": {
+        "/chat/chatroom": {
             "post": {
                 "tags": [
                     "chat"
                 ],
-                "summary": "새로운 채팅 세션 생성",
-                "description": "사용자 ID를 받아 새로운 채팅 세션을 생성합니다.",
+                "summary": "새로운 채팅 방 생성",
+                "description": "사용자 ID를 받아 새로운 채팅방을 생성합니다.",
                 "parameters": [
                     {
-                        "name": "body",
-                        "in": "body",
+                        "name": "user_id",
+                        "in": "query",
                         "required": true,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "user_id": {
-                                    "type": "string",
-                                    "example": "user123"
-                                }
-                            },
-                            "required": [
-                                "user_id"
-                            ]
-                        }
+                        "type": "string",
+                        "example": "user123"
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "새로운 세션이 성공적으로 생성됨",
+                        "description": "새로운 채팅방이 성공적으로 생성됨",
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "session_id": {
+                                "chatroom_id": {
                                     "type": "string",
                                     "example": "user123_20240220123045"
                                 }
@@ -956,8 +977,8 @@
                 "tags": [
                     "chat"
                 ],
-                "summary": "사용자의 모든 채팅 세션 조회",
-                "description": "특정 사용자 ID에 대한 모든 채팅 세션 목록을 반환합니다.",
+                "summary": "사용자의 모든 채팅 채팅방 조회",
+                "description": "특정 사용자 ID에 대한 모든 채팅 채팅방 목록을 반환합니다.",
                 "parameters": [
                     {
                         "name": "user_id",
@@ -969,11 +990,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "사용자의 채팅 세션 목록 조회 성공",
+                        "description": "사용자의 채팅 채팅방 목록 조회 성공",
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "sessions": {
+                                "chatrooms": {
                                     "type": "array",
                                     "items": {
                                         "type": "string"
@@ -983,7 +1004,7 @@
                         }
                     },
                     "404": {
-                        "description": "사용자의 채팅 세션이 없음"
+                        "description": "사용자의 채팅 채팅방이 없음"
                     },
                     "500": {
                         "description": "서버 내부 오류"
@@ -1112,6 +1133,166 @@
                                 "error": {
                                     "type": "string",
                                     "example": "서버 오류가 발생했습니다."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/history/search": {
+            "get": {
+                "tags": [
+                    "chat"
+                ],
+                "summary": "사용자의 채팅방 내용 검색",
+                "description": "검색어를 기반으로 사용자의 채팅방 목록 반환",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "검색을 요청한 사용자의 고유 ID",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "검색어 (채팅방 ID 또는 메시지 내용)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "검색 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "chatrooms": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "chatroom_id": {
+                                                "type": "string",
+                                                "example": "abc123"
+                                            },
+                                            "timestamp": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2023-10-01T12:34:56Z"
+                                            },
+                                            "conversation_end": {
+                                                "type": "boolean",
+                                                "example": false
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (검색어 누락)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "검색어가 필요합니다."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "인증 실패",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "인증이 필요합니다."
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/chatroom/{chatroom_id}": {
+            "delete": {
+                "tags": [
+                    "chat"
+                ],
+                "summary": "특정 채팅방 삭제",
+                "description": "사용자의 특정 채팅방 삭제",
+                "parameters": [
+                    {
+                        "name": "chatroom_id",
+                        "in": "path",
+                        "description": "삭제할 채팅방의 고유 ID",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "삭제 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "채팅방이 삭제되었습니다."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "인증 실패",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "인증이 필요합니다."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "채팅방을 찾을 수 없음",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "채팅방을 찾을 수 없습니다."
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
                                 }
                             }
                         }
