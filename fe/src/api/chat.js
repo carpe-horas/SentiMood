@@ -23,7 +23,6 @@ export const getChatHistory = async (chatroomId, limit = 10) => {
     console.log("API 응답 데이터:", response.data);
 
     if (response.data && Array.isArray(response.data.chats)) {
-      // conversationEnd 값을 API 응답에서 가져옴
       const conversationEnd = response.data.conversationEnd || false;
 
       return {
@@ -43,11 +42,10 @@ export const getChatHistory = async (chatroomId, limit = 10) => {
 //챗봇 대화
 export const sendMessageToBot = async (chatroomId, userMessage) => {
   try {
-    // 사용자 메시지 저장 (bot_response에 공백 문자열을 전달)
     await axios.post("/chat/message", {
       chatroom_id: chatroomId,
       user_message: userMessage,
-      bot_response: " ", // 빈 문자열 대신 공백 문자열로 전달
+      bot_response: " ", 
       emotion_id: null,
       confidence: null,
       conversation_end: false,
@@ -62,7 +60,6 @@ export const sendMessageToBot = async (chatroomId, userMessage) => {
     const botResponse =
       response.data.bot_response || "챗봇 응답을 받을 수 없습니다.";
 
-    // 챗봇 응답 저장 (user_message에 공백 문자열 전달)
     await axios.post("/chat/message", {
       chatroom_id: chatroomId,
       user_message: " ",
@@ -78,6 +75,50 @@ export const sendMessageToBot = async (chatroomId, userMessage) => {
     throw error;
   }
 };
+
+// 감정 기반 챗봇 대화
+export const sendEmotionChatMessage = async (chatroomId, userMessage) => {
+  try {
+    // 요청 데이터
+    const requestData = {
+      chatroom_id: chatroomId,
+      user_message: userMessage || "", 
+    };
+
+    console.log("전송 데이터:", requestData);
+
+    const response = await axios.post("/chat/emotion-chat", requestData);
+
+    console.log("서버 응답:", response.data);
+
+    // 응답 데이터 파싱
+    const { bot_response, emotion, confidence, emotion_id, message } = response.data;
+
+    console.log("응답 메시지:", message);
+    console.log("감정 분석 결과:", emotion);
+    console.log("감정 신뢰도:", confidence);
+    console.log("감정 ID:", emotion_id);
+
+    // 챗봇 응답 처리 (bot_response가 없다면 기본 메시지 사용)
+    const botResponse = bot_response || "챗봇 응답을 받을 수 없습니다.";
+
+    return {
+      botResponse, 
+      emotionData: {
+        emotion,
+        confidence, 
+        emotion_id, 
+      },
+    };
+  } catch (error) {
+    console.error(
+      "메시지 전송 실패:",
+      error.response ? error.response.data : error.message
+    );
+    throw error; 
+  }
+};
+
 
 // 메시지 삭제
 export const deleteMessage = async (messageId) => {

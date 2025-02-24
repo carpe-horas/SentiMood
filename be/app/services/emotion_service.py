@@ -1,19 +1,27 @@
 from datetime import datetime
 from app.database import mongo
+import uuid
+import logging
 
 def save_emotion_data(user_id, chatroom_id, emotion, confidence):
     """
     감정 데이터를 MongoDB에 저장
     :param user_id: 사용자 ID
     :param chatroom_id: 채팅방 ID
-    :param emotion: 감정 (e.g., 'happy', 'sadness', 'angry')
+    :param emotion: 감정 (panic, 'happy', 'sadness', 'angry')
     :param confidence: 감정의 신뢰도 (0~1)
     """
+
+    if not all([user_id, chatroom_id, emotion, confidence]):
+        raise ValueError("필수 데이터가 누락되었습니다.")
+
+    emotion_id = str(uuid.uuid4())
+
     try:
-        # MongoDB에 감정 데이터 저장
         result = mongo.db.emotions.insert_one({
             "user_id": user_id,
             "chatroom_id": chatroom_id,
+            "emotion_id": emotion_id, 
             "emotion": emotion,
             "confidence": confidence,
             "timestamp": datetime.utcnow()
@@ -22,9 +30,11 @@ def save_emotion_data(user_id, chatroom_id, emotion, confidence):
             "message": "감정 데이터가 성공적으로 저장되었습니다.",
             "emotion": emotion,
             "confidence": confidence,
-            "inserted_id": str(result.inserted_id)  # 저장된 문서의 ID 반환
+            "emotion_id": emotion_id, 
+            "inserted_id": str(result.inserted_id)  
         }
     except Exception as e:
+        logging.error(f"감정 데이터 저장 오류: {e}") 
         raise RuntimeError(f"감정 데이터 저장 오류: {e}")
 
 def get_emotion_results(chatroom_id):

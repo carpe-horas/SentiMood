@@ -16,6 +16,7 @@ from app.services.emotion_service import (
 )
 from app.utils.auth import jwt_required_without_bearer
 import logging
+import uuid
 
 
 emotion_bp = Blueprint("emotion", __name__)
@@ -28,7 +29,7 @@ model = load_emotion_model()
 def predict():
     """웹캠 스트림에서 전송된 프레임을 받아 실시간으로 감정을 예측"""
     try:
-        user_id = request.user_id  
+        user_id = request.user_id
         chatroom_id = request.json.get("chatroom_id")
         frame_data = request.json.get("frame")
 
@@ -36,7 +37,7 @@ def predict():
             return jsonify({"message": "필수 필드가 누락되었습니다."}), 400
 
         # Base64 디코딩 및 이미지 변환
-        image_data = base64.b64decode(frame_data)
+        image_data = base64.b64decode(frame_data.split(",")[1])  # "data:image/jpeg;base64," 부분을 제외하고 디코딩
         np_array = np.frombuffer(image_data, np.uint8)
         image = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
@@ -64,7 +65,7 @@ def predict():
 
 
 # 감정 데이터 저장 API
-@emotion_bp.route("/emotion/save-emotion", methods=["POST"])
+@emotion_bp.route("/save-emotion", methods=["POST"])
 @jwt_required_without_bearer  # JWT 인증 추가
 def save_emotion():
     """실시간으로 인식된 감정 데이터를 MongoDB에 저장"""
@@ -76,12 +77,15 @@ def save_emotion():
 
         if not all([user_id, chatroom_id, emotion, confidence]):
             return jsonify({"message": "필수 필드가 누락되었습니다."}), 400
+        
+        # emotion_id 생성
+        emotion_id = str(uuid.uuid4())
 
-        save_emotion_data(user_id, chatroom_id, emotion, confidence)
+        save_emotion_data(user_id, chatroom_id, emotion, confidence, emotion_id)
         return jsonify({"success": True, "message": "감정 데이터 저장 성공"})
 
     except Exception as e:
-        logging.error(f"[ERROR] /emotion/save-emotion: {e}")
+        logging.error(f"[ERROR] /save-emotion: {e}")
         return jsonify({"message": f"오류 발생: {str(e)}"}), 500
 
 
@@ -102,7 +106,7 @@ def results(chatroom_id):
         return jsonify(results)
 
     except Exception as e:
-        print(f"[ERROR] /emotion/results/{chatroom_id}: {e}")
+        print(f"[ERROR] /results/{chatroom_id}: {e}")
         return jsonify({"message": f"오류 발생: {str(e)}"}), 500
 
 
