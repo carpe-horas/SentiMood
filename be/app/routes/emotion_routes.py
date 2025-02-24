@@ -28,7 +28,7 @@ model = load_emotion_model()
 def predict():
     """웹캠 스트림에서 전송된 프레임을 받아 실시간으로 감정을 예측"""
     try:
-        user_id = request.user_id  # JWT에서 추출한 user_id
+        user_id = request.user_id  
         chatroom_id = request.json.get("chatroom_id")
         frame_data = request.json.get("frame")
 
@@ -56,11 +56,11 @@ def predict():
                 "confidence": confidence,
                 "message": "감정 분석이 성공적으로 수행되었습니다.",
             }
-        )
+        ), 200
 
     except Exception as e:
-        logging.error(f"[ERROR] /emotion/predict: {e}")
-        return jsonify({"message": f"오류 발생: {str(e)}"}), 500
+        logging.error(f"감정 예측 실패: {e}")
+        return jsonify({"error": "감정 예측 실패"}), 500
 
 
 # 감정 데이터 저장 API

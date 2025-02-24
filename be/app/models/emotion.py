@@ -1,9 +1,12 @@
+from flask_pymongo import PyMongo 
 from datetime import datetime
 import tensorflow as tf
 import cv2
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array
 import os
+
+mongo = PyMongo()
 
 def save_emotion(mongo, user_id, chatroom_id, emotion, confidence):
     """
