@@ -135,10 +135,9 @@ def create_chatroom(user_id: str) -> str:
     :return: 생성된 채팅방 ID
     """
     try:
-        chatroom_id = str(uuid.uuid4())  # 채팅방 ID 생성 (UUID)
+        chatroom_id = str(uuid.uuid4()) 
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         
-        # 채팅방 데이터
         chatroom_data = {
             "user_id": user_id,
             "chatroom_id": chatroom_id,
@@ -204,11 +203,9 @@ def add_chat(user_id, chatroom_id, user_message, bot_response, emotion_id=None, 
         raise RuntimeError("MongoDB 연결이 설정되지 않았습니다.")
 
     try:
-        # chatroom_id가 문자열이고, UUID 형식인지 확인
         if not isinstance(chatroom_id, str) or not is_valid_uuid(chatroom_id):
             raise ValueError("유효하지 않은 chatroom_id입니다.")
         
-        # 채팅 데이터
         chat_data = {
             "user_id": user_id,
             "user_message": user_message,
@@ -269,7 +266,6 @@ def delete_chat_message(message_id: str) -> bool:
     :return: 삭제 성공 여부
     """
     try:
-        # 메시지 삭제
         result = mongo.db.chats.delete_one({"_id": ObjectId(message_id)})
         if result.deleted_count > 0:
             return True
@@ -295,20 +291,17 @@ def is_valid_uuid(uuid_string):
     
 
 def handle_message(user_id, chatroom_id, user_message, bot_response, conversation_end):
-    # MongoDB에서 채팅방을 찾음
     chatroom_data = mongo.db.chatrooms.find_one({"chatroom_id": chatroom_id})
     
     if chatroom_data is None:
-        # 채팅방이 없으면 새로운 채팅방 생성
         chatroom_data = {
             'user_id': user_id,
             'chatroom_id': chatroom_id,
             'conversation_end': conversation_end,
-            'messages': []  # 새로운 채팅방에 메시지 리스트 추가
+            'messages': []  
         }
         mongo.db.chatrooms.insert_one(chatroom_data) 
 
-    # 채팅방에 새로운 메시지 추가
     try:
         mongo.db.chatrooms.update_one(
             {"chatroom_id": chatroom_id},
@@ -336,7 +329,6 @@ def get_chat_history(user_id, limit=10):
     :return: 대화 기록 리스트
     """
     try:
-        # 사용자가 속한 모든 채팅방 조회
         chatrooms = mongo.db.chatrooms.find({"user_id": user_id})
 
         if not chatrooms:
@@ -344,7 +336,6 @@ def get_chat_history(user_id, limit=10):
 
         chat_history = []
         for chatroom in chatrooms:
-            # 각 채팅방의 대화 기록을 가져옴
             chatroom_id = chatroom.get("chatroom_id")
             chats = chatroom.get("chats", [])
 
@@ -373,6 +364,7 @@ def get_chat_history(user_id, limit=10):
 def get_user_chatroom_history(user_id, chatroom_id, limit):
     """특정 사용자의 특정 채팅방 대화 기록을 조회"""
     try:
+        # print(f"[DEBUG] user_id: {user_id}, chatroom_id: {chatroom_id}")  
         chatroom = mongo.db.chatrooms.find_one(
             {"user_id": user_id, "chatroom_id": chatroom_id}
         )
@@ -380,15 +372,16 @@ def get_user_chatroom_history(user_id, chatroom_id, limit):
         if not chatroom:
             raise NotFound(f"사용자의 채팅방을 찾을 수 없습니다.")
         
-        # 채팅방에 저장된 대화 기록 가져오기
         chats = chatroom.get("chats", [])
+        conversation_end = chatroom.get("conversation_end", False)
         
-        # 최신 대화부터 limit 개수만큼 반환
-        return {"chats": chats[-limit:]}  
-    
+        return {"chats": chats[-limit:], "conversationEnd": conversation_end}
+
     except Exception as e:
         print(f"[ERROR] 대화 기록 조회 오류: {e}")
         raise
+
+
 
 def delete_chatroom_service(user_id: str, chatroom_id: str) -> bool:
     """

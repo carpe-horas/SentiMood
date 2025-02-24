@@ -55,6 +55,10 @@ def register():
     try:
         data = request.get_json()
         response = register_user(data["email"], data["password"], data["confirm_password"])
+        user = User.query.filter_by(email=data["email"]).first()
+        if user:
+            response["user_id"] = user.user_id 
+        
         return jsonify(response), 201
     except ValueError as e:
         current_app.logger.error(f"Registration error: {str(e)}")

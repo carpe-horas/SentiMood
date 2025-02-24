@@ -29,6 +29,10 @@
         {
             "name": "diary",
             "description": "다이어리 API"
+        },
+        {
+            "name": "emotion",
+            "description": "얼굴/감정 인식 API"
         }
     ],
     "securityDefinitions": {
@@ -320,7 +324,7 @@
                 }
             }
         },
-        "/auth/reset-password-request": {
+        "/auth/request-password-reset": {
             "post": {
                 "tags": [
                     "auth"
@@ -346,6 +350,12 @@
                 "responses": {
                     "200": {
                         "description": "비밀번호 재설정 링크 전송 완료"
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (예: 이메일 누락)"
+                    },
+                    "500": {
+                        "description": "서버 오류"
                     }
                 }
             }
@@ -1293,6 +1303,1360 @@
                                 "error": {
                                     "type": "string",
                                     "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/summary": {
+            "post": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "대화 내용 요약",
+                "description": "사용자의 채팅방 ID를 기반으로 대화 내용을 요약하여 일기 형식으로 생성",
+                "parameters": [
+                    {
+                        "name": "chatroom_id",
+                        "in": "body",
+                        "description": "대화 내용 요약을 위한 채팅방 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "chatroom_id": {
+                                    "type": "string",
+                                    "example": "chatroom_123"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "대화 내용 요약 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "summary": {
+                                    "type": "string",
+                                    "example": "오늘 대화는 모두 긍정적이었어요."
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (chatroom_id가 제공되지 않음)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "chatroom_id가 필요합니다."
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/save": {
+            "post": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "일기 내용 저장",
+                "description": "요약된 대화 내용을 사용자 ID와 감정 정보와 함께 일기 형식으로 저장",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "body",
+                        "description": "사용자의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "user_123"
+                        }
+                    },
+                    {
+                        "name": "content",
+                        "in": "body",
+                        "description": "대화 내용 요약 또는 일기 내용",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "오늘은 친구와 좋은 대화를 나누었어요."
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "body",
+                        "description": "일기 작성 날짜 (기본값: 오늘 날짜)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "2025-02-23"
+                        }
+                    },
+                    {
+                        "name": "emotion",
+                        "in": "body",
+                        "description": "일기 작성 시 감정 상태",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "happy"
+                        }
+                    },
+                    {
+                        "name": "summary",
+                        "in": "body",
+                        "description": "대화를 일기형식으로 요약",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "오늘 대화는 긍정적인 분위기였어요."
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "일기 저장 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 저장 성공!"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (필수 값이 없거나 유효하지 않음)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "사용자 ID와 일기 내용은 필수입니다!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/calendar/emoji": {
+            "post": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "대화에서 감지된 감정에 따라 달력에 이모지 표시",
+                "description": "사용자가 선택한 날짜에 가장 많이 감지된 감정을 기반으로 달력에 이모지를 표시",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "body",
+                        "description": "사용자의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "user_123"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "body",
+                        "description": "이모지를 표시할 날짜",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "2025-02-23"
+                        }
+                    },
+                    {
+                        "name": "emotion_emoji",
+                        "in": "body",
+                        "description": "가장 많이 감지된 감정을 표현하는 이모지",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "😊"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "이모지 표시 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "이모지 표시 성공!"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (필수 값이 없거나 유효하지 않음)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "사용자 ID, 날짜, 이모지는 필수입니다!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/list": {
+            "get": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "특정 날짜에 작성된 일기 목록 조회",
+                "description": "사용자가 특정 날짜에 작성한 일기 목록을 조회하는 API",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "사용자의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "user_123"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "조회할 날짜 (형식: YYYY-MM-DD)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "2025-02-23"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "일기 목록 조회 성공",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "user_123"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "example": "2025-02-23"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "오늘 하루도 잘 보냈어요. 기분이 좋았습니다."
+                                    },
+                                    "emotion": {
+                                        "type": "string",
+                                        "example": "happy"
+                                    },
+                                    "summary": {
+                                        "type": "string",
+                                        "example": "하루 종일 기분이 좋았고, 긍정적인 일들이 많았다."
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (필수 값이 없거나 유효하지 않음)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "사용자 ID와 날짜는 필수입니다!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/{diary_id}": {
+            "get": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "일기 상세 조회",
+                "description": "특정 일기의 상세 정보를 조회하는 API",
+                "parameters": [
+                    {
+                        "name": "diary_id",
+                        "in": "path",
+                        "description": "상세 조회할 일기의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "diary_123"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "일기 상세 조회 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "user_id": {
+                                    "type": "string",
+                                    "example": "user_123"
+                                },
+                                "date": {
+                                    "type": "string",
+                                    "example": "2025-02-23"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "example": "오늘 하루도 잘 보냈어요. 기분이 좋았습니다."
+                                },
+                                "emotion": {
+                                    "type": "string",
+                                    "example": "happy"
+                                },
+                                "summary": {
+                                    "type": "string",
+                                    "example": "하루 종일 기분이 좋았고, 긍정적인 일들이 많았다."
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "일기 없음 (해당 ID에 대한 일기 없음)",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 없음"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/delete/{diary_id}": {
+            "delete": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "일기 삭제",
+                "description": "특정 일기를 삭제하는 API",
+                "parameters": [
+                    {
+                        "name": "diary_id",
+                        "in": "path",
+                        "description": "삭제할 일기의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "diary_123"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "일기 삭제 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 삭제 성공!"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "일기 삭제 실패",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 삭제 실패!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/update/{diary_id}": {
+            "put": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "일기 내용 수정",
+                "description": "특정 일기의 내용을 수정하는 API",
+                "parameters": [
+                    {
+                        "name": "diary_id",
+                        "in": "path",
+                        "description": "수정할 일기의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "diary_123"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "description": "새로운 일기 내용",
+                                        "example": "오늘은 날씨가 정말 좋았다."
+                                    },
+                                    "emotion": {
+                                        "type": "string",
+                                        "description": "새로운 감정 상태",
+                                        "example": "행복"
+                                    }
+                                },
+                                "required": [
+                                    "content"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "일기 수정 성공",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 수정 성공!"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "일기 수정 실패",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "일기 내용은 필수입니다!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/diary/search": {
+            "get": {
+                "tags": [
+                    "diary"
+                ],
+                "summary": "일기 내용 검색",
+                "description": "특정 사용자 ID와 검색어를 기준으로 일기 내용을 검색하는 API",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "검색할 사용자의 고유 ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "user_123"
+                        }
+                    },
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "검색할 키워드",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "오늘"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "검색 결과 반환",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "diary_id": {
+                                        "type": "string",
+                                        "example": "diary_123"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "오늘은 날씨가 너무 좋았다. 기분도 좋았다."
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "example": "2025-02-23"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "필수 입력값 누락",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "example": "사용자 ID와 검색어는 필수입니다!"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 내부 오류",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "서버 내부 오류"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/predict": {
+            "post": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "웹캠 프레임에서 실시간 감정 예측",
+                "description": "웹캠 스트림에서 전송된 프레임을 받아 실시간으로 감정을 예측하고 결과를 반환합니다.",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "frame": {
+                                        "type": "string",
+                                        "format": "byte",
+                                        "example": "Base64 인코딩된 이미지 데이터",
+                                        "description": "웹캠 프레임 (Base64 인코딩)"
+                                    },
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "user123",
+                                        "description": "사용자 ID"
+                                    },
+                                    "chatroom_id": {
+                                        "type": "string",
+                                        "example": "room456",
+                                        "description": "채팅방 ID"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "감정 예측 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "emotion": {
+                                            "type": "string",
+                                            "example": "happy",
+                                            "description": "예측된 감정"
+                                        },
+                                        "confidence": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0.85,
+                                            "description": "감정 신뢰도 (0~1)"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "감정 분석이 성공적으로 수행되었습니다.",
+                                            "description": "응답 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "잘못된 요청 (프레임 데이터 누락 등)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "프레임 데이터가 필요합니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/save-emotion": {
+            "post": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "실시간 감정 데이터 저장",
+                "description": "실시간으로 인식된 감정 데이터를 MongoDB에 저장합니다.",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "user123",
+                                        "description": "사용자 ID"
+                                    },
+                                    "chatroom_id": {
+                                        "type": "string",
+                                        "example": "room456",
+                                        "description": "채팅방 ID"
+                                    },
+                                    "emotion": {
+                                        "type": "string",
+                                        "example": "happy",
+                                        "description": "감정 레이블"
+                                    },
+                                    "confidence": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 0.85,
+                                        "description": "감정 신뢰도 (0~1)"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "감정 데이터 저장 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true,
+                                            "description": "저장 성공 여부"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "감정 데이터 저장 성공",
+                                            "description": "응답 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "필수 필드 누락",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "필수 필드가 누락되었습니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/results/{chatroom_id}": {
+            "get": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "특정 채팅방의 감정 데이터 조회",
+                "description": "특정 채팅방의 감정 분석 결과를 조회합니다.",
+                "parameters": [
+                    {
+                        "name": "chatroom_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "example": "room456",
+                        "description": "조회할 채팅방 ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "감정 데이터 조회 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "emotion": {
+                                                "type": "string",
+                                                "example": "happy",
+                                                "description": "감정 레이블"
+                                            },
+                                            "confidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0.85,
+                                                "description": "감정 신뢰도 (0~1)"
+                                            },
+                                            "timestamp": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2023-10-01T12:34:56Z",
+                                                "description": "데이터 저장 시간"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "특정 채팅방의 감정 데이터 삭제",
+                "description": "특정 채팅방의 감정 분석 결과를 삭제합니다.",
+                "parameters": [
+                    {
+                        "name": "chatroom_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "example": "room456",
+                        "description": "삭제할 채팅방 ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "감정 데이터 삭제 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "삭제 성공",
+                                            "description": "응답 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/save-end-emotion": {
+            "post": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "대화 종료 시 대표 감정 저장",
+                "description": "대화 종료 시, 채팅방에서 가장 많이 감지된 감정을 저장합니다.",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "chatroom_id": {
+                                        "type": "string",
+                                        "example": "room456",
+                                        "description": "채팅방 ID"
+                                    },
+                                    "user_id": {
+                                        "type": "string",
+                                        "example": "user123",
+                                        "description": "사용자 ID"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "대표 감정 저장 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "대화 종료 시 감정 데이터 저장 성공",
+                                            "description": "응답 메시지"
+                                        },
+                                        "emotion": {
+                                            "type": "object",
+                                            "properties": {
+                                                "emotion": {
+                                                    "type": "string",
+                                                    "example": "happy",
+                                                    "description": "대표 감정"
+                                                },
+                                                "confidence": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 0.85,
+                                                    "description": "신뢰도"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "필수 필드 누락",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "필수 필드가 누락되었습니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/history": {
+            "get": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "사용자의 감정 분석 기록 조회",
+                "description": "JWT 토큰을 통해 인증된 사용자의 감정 분석 기록을 조회합니다.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "감정 기록 조회 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "emotion": {
+                                                "type": "string",
+                                                "example": "happy",
+                                                "description": "감정 레이블"
+                                            },
+                                            "confidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0.85,
+                                                "description": "감정 신뢰도 (0~1)"
+                                            },
+                                            "timestamp": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2023-10-01T12:34:56Z",
+                                                "description": "데이터 저장 시간"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "인증 실패 (토큰 누락 또는 유효하지 않음)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "인증이 필요합니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/stats": {
+            "get": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "사용자의 감정 통계 조회",
+                "description": "JWT 토큰을 통해 인증된 사용자의 감정 통계를 조회합니다 (주간, 월간 등).",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "format": "date",
+                        "example": "2023-02-01",
+                        "description": "통계 시작 날짜"
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "format": "date",
+                        "example": "2023-02-28",
+                        "description": "통계 종료 날짜"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "감정 통계 조회 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "감정 통계 조회 성공",
+                                            "description": "응답 메시지"
+                                        },
+                                        "stats": {
+                                            "type": "object",
+                                            "properties": {
+                                                "happy": {
+                                                    "type": "integer",
+                                                    "example": 10,
+                                                    "description": "행복 감정 빈도수"
+                                                },
+                                                "sadness": {
+                                                    "type": "integer",
+                                                    "example": 5,
+                                                    "description": "슬픔 감정 빈도수"
+                                                },
+                                                "angry": {
+                                                    "type": "integer",
+                                                    "example": 3,
+                                                    "description": "분노 감정 빈도수"
+                                                },
+                                                "panic": {
+                                                    "type": "integer",
+                                                    "example": 2,
+                                                    "description": "공포 감정 빈도수"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "필수 파라미터 누락",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "날짜 범위(start_date, end_date)가 필요합니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "인증 실패 (토큰 누락 또는 유효하지 않음)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "인증이 필요합니다.",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/status": {
+            "get": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "감정 분석 모델 상태 확인",
+                "description": "감정 분석 모델의 상태를 확인합니다.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "모델 상태 확인 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "정상",
+                                            "description": "모델 상태"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/emotion/auto-end": {
+            "post": {
+                "tags": [
+                    "emotion"
+                ],
+                "summary": "미처리된 감정 데이터 자동 종료",
+                "description": "날짜가 바뀌면 미종료된 감정 분석 데이터를 자동으로 종료합니다.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "자동 종료 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "자동 종료된 감정 분석 데이터",
+                                            "description": "응답 메시지"
+                                        },
+                                        "ended_emotions": {
+                                            "type": "integer",
+                                            "example": 5,
+                                            "description": "자동 종료된 데이터 수"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "서버 오류",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "오류 발생: 내부 서버 문제",
+                                            "description": "오류 메시지"
+                                        }
+                                    }
                                 }
                             }
                         }

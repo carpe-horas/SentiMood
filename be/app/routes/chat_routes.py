@@ -99,16 +99,13 @@ def get_chat(chatroom_id):
 @jwt_required_without_bearer
 def get_chat_history(user_id):
     """사용자의 모든 채팅방 조회"""
-    # 인증 확인
     if not request.user_id:
         return jsonify({"error": "인증이 필요합니다."}), 401
 
-    # 요청된 user_id와 JWT 토큰의 user_id가 일치하는지 확인
     if request.user_id != user_id:
         return jsonify({"error": "잘못된 사용자 ID입니다."}), 403
 
     try:
-        # 사용자의 채팅방 목록 조회
         chatrooms = get_user_chat_history(user_id)
         return jsonify({"chatrooms": chatrooms}), 200
     except Exception as e:
@@ -125,10 +122,8 @@ def close_chat(chatroom_id):
         if not user_id:
             return jsonify({"error": "인증이 필요합니다."}), 401
         
-        # 채팅방 종료 처리
         response = end_chatroom(user_id, chatroom_id)
         
-        # 응답에 따라 적절한 HTTP 상태 코드 반환
         if "error" in response:
             return jsonify(response), 404 if "찾을 수 없습니다" in response["error"] else 500
         
@@ -179,14 +174,14 @@ def delete_message(message_id):
 
 
 @chat_bp.route("/rag-response", methods=["POST"])
-@jwt_required_without_bearer  # 인증 처리
+@jwt_required_without_bearer  
 @login_required  # 로그인된 사용자만 RAG 응답을 받을 수 있도록 추가
 def chat_rag_response():
     """
     RAG 기반 상담 챗봇 응답 API
     """
     try:
-        user_id = request.user_id  # jwt_required_without_bearer에서 자동으로 추가됨
+        user_id = request.user_id 
         if not user_id:
             return jsonify({"error": "인증이 필요합니다."}), 401
 
@@ -240,7 +235,6 @@ def search_chat_history():
         if not user_id:
             return jsonify({"error": "인증이 필요합니다."}), 401
 
-        # 검색어 확인
         query = request.args.get("query", "").strip()
         if not query:
             return jsonify({"error": "검색어가 필요합니다."}), 400
