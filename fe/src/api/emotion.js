@@ -47,19 +47,36 @@ export const saveEmotionData = async (userId, chatroomId, emotion, confidence) =
 };
 
 /**
- * 특정 채팅방의 감정 분석 결과 조회
+ * 특정 채팅방의 감정 분석 결과 조회 (가장 많이 등장한 감정 포함)
  * @param {string} chatroomId - 채팅방 ID
- * @returns {Promise<Object>} - 감정 분석 결과
+ * @returns {Promise<Object>} - 감정 분석 결과 및 가장 많이 등장한 감정
  */
 export const getEmotionResults = async (chatroomId) => {
+  if (!chatroomId) {
+    console.warn("[WARN] 유효하지 않은 chatroomId:", chatroomId);
+    return { emotions: [], most_common: { emotion: "default", confidence: 0 } };
+  }
+
   try {
+    console.log("[DEBUG] 감정 데이터 요청 시작:", chatroomId);
+
     const response = await api.get(`/emotion/results/${chatroomId}`);
-    return response.data;  // 감정 분석 결과
+
+    console.log("[DEBUG] 감정 데이터 요청 성공:", response.data);
+
+    return response.data || { emotions: [], most_common: { emotion: "default", confidence: 0 } };
   } catch (error) {
-    console.error('감정 결과 조회 실패:', error);
-    throw new Error('감정 결과 조회 실패');
+    console.error("[ERROR] 감정 결과 조회 실패:", error);
+
+    if (error.response) {
+      console.error("[ERROR] 응답 데이터:", error.response.data);
+      console.error("[ERROR] 상태 코드:", error.response.status);
+    }
+
+    return { emotions: [], most_common: { emotion: "default", confidence: 0 } }; 
   }
 };
+
 
 /**
  * 감정 데이터 삭제
