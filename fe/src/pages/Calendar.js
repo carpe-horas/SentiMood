@@ -18,9 +18,9 @@ const CalendarWrapper = styled.div`
   align-items: center;
   justify-content: flex-start;
   min-height: 100vh;
-  background-color:rgb(233, 243, 251);
-  padding: 20px; 
-  box-sizing: border-box; 
+  background-color: rgb(233, 243, 251);
+  padding: 20px;
+  box-sizing: border-box;
   h2 {
     margin-top: 20px;
     margin-bottom: 20px;
@@ -38,6 +38,13 @@ const StyledCalendar = styled(Calendar)`
   width: 90%;
   min-height: 535px;
   min-width: 430px;
+
+  /* 해당 월에 속하지 않는 날짜 스타일 */
+  .react-calendar__month-view__days__day--neighboringMonth {
+    color: rgba(157, 157, 157, 0.31) !important;
+    pointer-events: none;
+    background-color: rgb(254, 254, 254) !important;
+  }
 
   .react-calendar__navigation {
     background: #90caf9;
@@ -80,7 +87,8 @@ const StyledCalendar = styled(Calendar)`
     height: 80px;
     width: 100px;
     flex-grow: 1;
-    color: rgb(74, 75, 76);
+    color: rgb(60, 68, 76);
+    font-weight: bold;
     font-size: 15px;
     display: flex;
     align-items: flex-start;
@@ -255,6 +263,16 @@ const CalendarPage = () => {
         locale="ko"
         calendarType="hebrew"
         onClickDay={handleDateClick}
+        tileClassName={({ date, view }) => {
+          // 'month' 뷰에서만 적용
+          if (view === "month") {
+            const isCurrentMonth = date.getMonth() === new Date().getMonth(); // 현재 달과 비교
+            return isCurrentMonth
+              ? ""
+              : "react-calendar__month-view__days__day--neighboringMonth";
+          }
+          return "";
+        }}
       />
       {selectedDate && (
         <DiaryList selectedDate={selectedDate} diaryEntries={diaryEntries} />

@@ -79,7 +79,7 @@ const ChatRoomItem = styled.div`
 const CreateChatButton = styled.button`
   margin: 10px;
   padding: 12px 20px;
-  background-color: #64b5f6; 
+  background-color:rgb(102, 185, 252); 
   color: white;
   border: none;
   border-radius: 20px; 
@@ -88,7 +88,7 @@ const CreateChatButton = styled.button`
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.3s ease;
   &:hover {
-    background-color: #2196f3; 
+    background-color:rgb(48, 162, 255); 
     transform: scale(1.05);
   }
 `;

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 import styled from 'styled-components';
 import { useNavigate } from "react-router-dom";
+// import Navbar from './../components/Navbar';
 
 const Container = styled.div`
   display: flex;
@@ -24,7 +25,7 @@ const Home = () => {
   return (
     <Container>
       <h1>홈 화면</h1>
-      <p>채팅, 달력(다이어리), 설정</p>
+      <p>챗봇, 달력을 Navbar로 옮겨서.....</p>
     </Container>
   );
 };

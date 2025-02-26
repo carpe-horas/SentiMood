@@ -1,7 +1,7 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
-// 애니메이션 효과 정의: 텍스트가 커지는 애니메이션
+// 텍스트가 커지는 애니메이션
 const growAnimation = keyframes`
   0% {
     transform: scale(0.5);
