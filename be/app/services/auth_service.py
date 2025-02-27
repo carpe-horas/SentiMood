@@ -342,7 +342,7 @@ def authenticate_user(email, password):
     is_password_correct = user.check_password(password)
     print(f"[DEBUG] 비밀번호 검증 결과: {is_password_correct}")
 
-    if not is_password_correct: 
+    if not is_password_correct:
         print(f"[DEBUG] 저장된 비밀번호 해시: {user.password_hash}")
         print(f"[DEBUG] 입력된 비밀번호: {password}")
         raise ValueError("이메일 또는 비밀번호가 올바르지 않습니다.")
@@ -353,8 +353,8 @@ def authenticate_user(email, password):
     print("[DEBUG] 비밀번호 검증 성공!")
 
     # JWT 토큰 생성
-    access_token = create_access_token(identity=user.user_id)  
-    refresh_token = create_refresh_token(identity=user.user_id)
+    access_token = create_access_token(identity=user.user_id, expires_delta=timedelta(minutes=15))  
+    refresh_token = create_refresh_token(identity=user.user_id, expires_delta=timedelta(days=7))
 
     # MongoDB에서 기존 로그인 세션 종료
     print("[DEBUG] MongoDB에 저장된 user_id:", user.user_id)
@@ -370,10 +370,6 @@ def authenticate_user(email, password):
     except Exception as e:
         db.session.rollback()  
         print(f"[ERROR] 로그인 로그 저장 실패: {str(e)}")
-
-    # Redis에 토큰 저장
-    r.setex(f"access_token_{user.user_id}", timedelta(minutes=15), access_token)
-    r.setex(f"refresh_token_{user.user_id}", timedelta(days=7), refresh_token)
 
     # Redis에 토큰 저장
     r.setex(f"access_token_{user.user_id}", timedelta(minutes=15), access_token)

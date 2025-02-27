@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 const DiaryListWrapper = styled.div`
-  margin-top: 20px;
+  margin-top: 50px;
   padding: 15px;
-  width: 80%;
+  width: 90%;
   max-width: 500px;
   background: white;
   border-radius: 10px;
