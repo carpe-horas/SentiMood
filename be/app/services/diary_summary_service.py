@@ -57,6 +57,7 @@ def generate_summary(chatroom_id):
     - 날짜나 시간 정보를 임의로 작성하지 마세요. 
     - 문장을 자연스럽게 연결하여 완성된 글로 작성하세요.
     - 문장이 끊기지 않도록 주의하며, 완결성있게 마무리지으세요.
+    - 8문장 내로 마무리 지어주세요.
 
     대화 내용:
     {conversation_text}
@@ -76,18 +77,19 @@ def generate_summary(chatroom_id):
                 {"role": "user", "content": prompt}
             ],
             max_tokens=200,
-            temperature=0.7
+            temperature=0.7,
+            stop=["\n\n", "일기 끝"] 
         )
         
         summary = response.choices[0].message.content.strip()
         
-        # 응답 후처리: 불필요한 줄바꿈 제거
+        # 응답 후처리
         summary = summary.replace("\n\n", " ").replace("\n", " ")
         
         logging.info(f"[INFO] OpenAI API 호출 완료 - 요약 결과: {summary}")
         return summary
     
-    except OpenAIError as e:  # 수정된 부분
+    except OpenAIError as e:  
         logging.error(f"[ERROR] OpenAI API 서버 오류: {e}")
         return {"error": f"OpenAI API 서버 오류: {str(e)}"}, 500
     

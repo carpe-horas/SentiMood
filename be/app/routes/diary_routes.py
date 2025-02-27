@@ -112,15 +112,21 @@ def get_diary_list_api():
         user_id = request.user_id
         date = request.args.get("date")
 
+        if not date:
+            return jsonify({"error": "date 파라미터가 필요합니다."}), 400
+
+        print(f"[DEBUG] 요청된 날짜: {date}")
+
         diaries = get_diary_list(user_id, date)
+
         if not diaries:
-            return jsonify({"message": "저장된 일기가 없습니다."}), 404
+            return jsonify({"diaries": []}), 200  # 
 
-        return jsonify({"diaries": [diary.to_dict() for diary in diaries]}), 200
-
+        return jsonify({"diaries": diaries}), 200  # 
     except Exception as e:
         logging.error(f"[ERROR] /list: {e}")
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
+
 
 
 # 일기 상세 조회 API

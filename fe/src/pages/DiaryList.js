@@ -58,11 +58,11 @@ const DiaryListPage = ({ selectedDate, diaryEntries }) => {
         {diaryEntries.length > 0 ? (
           diaryEntries.map((entry) => (
             <DiaryItem key={entry.id} onClick={() => handleDiaryClick(entry.id)}>
-              {entry.emoji} <span>📖 {entry.timestamp}</span>
+              {entry.emoji} <span>📆 {entry.timestamp}</span>
             </DiaryItem>
           ))
         ) : (
-          <p>일기 없음</p>
+          <p>작성된 일기가 없습니다.</p>
         )}
       </DiaryList>
     </DiaryListWrapper>
