@@ -34,16 +34,30 @@ def get_diary_list(user_id, date, chatroom_id=None):
     특정 날짜에 작성된 일기 목록 조회
     :param user_id: 사용자 ID
     :param date: 날짜
-    :param chatroom_id: (옵션) 특정 채팅방 ID
+    :param chatroom_id: 특정 채팅방 ID
     """
     try:
         query = {"user_id": user_id, "date": date}
-        
-        if chatroom_id: 
+
+        if chatroom_id:
             query["chatroom_id"] = chatroom_id
 
-        diaries = mongo.db.diaries.find(query)
-        return [{**diary, "_id": str(diary["_id"])} for diary in diaries]
+        diaries_cursor = mongo.db.diaries.find(query)
+        diaries = [
+            {
+                "_id": str(diary["_id"]),
+                "user_id": diary["user_id"],
+                "chatroom_id": diary.get("chatroom_id"),
+                "content": diary["content"],
+                "date": diary["date"],
+                "emotion": diary.get("emotion"),
+                "summary": diary.get("summary"),
+                "created_at": diary["created_at"],
+            }
+            for diary in diaries_cursor
+        ]
+
+        return diaries
     except Exception as e:
         raise Exception(f"일기 목록 조회 중 오류 발생: {str(e)}")
 

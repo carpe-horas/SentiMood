@@ -5,6 +5,7 @@ import {
   closeChatroom,
 } from "../api/chat";
 import useEmotionStore from "../store/emotionStore";
+import useDiaryStore from "../store/diaryStore";
 import { predictEmotion } from "../api/emotion";
 import styled from "styled-components";
 import Webcam from "react-webcam";
@@ -139,11 +140,11 @@ const Button = styled.button`
 
 const EndButtonContainer = styled.div`
   display: flex;
-  justify-content: left; 
+  justify-content: left;
   padding: 10px;
   background-color: rgb(241, 241, 241);
-  border-top: 1px solid #e0e0e0; 
-  border-radius: 0 0 15px 15px; 
+  border-top: 1px solid #e0e0e0;
+  border-radius: 0 0 15px 15px;
   width: 100%;
 `;
 
@@ -185,11 +186,12 @@ const WebcamContainer = styled.div`
 const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const webcamRef = useRef(null);
   const { emotion, confidence, setEmotion } = useEmotionStore();
+  const { generateSummaryAndSave, loading } = useDiaryStore();
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [conversationEnd, setConversationEnd] = useState(false);
   const [previousEmotion, setPreviousEmotion] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [previousConfidence, setPreviousConfidence] = useState(null);
 
   useEffect(() => {
@@ -223,14 +225,9 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
       if (!webcamRef.current || loading || conversationEnd) return;
       const imageSrc = webcamRef.current.getScreenshot();
       if (!imageSrc) return;
-  
       try {
-        setLoading(true);
         const result = await predictEmotion(imageSrc, userId, chatroomId);
         const { emotion: newEmotion, confidence: newConfidence } = result;
-  
-        console.log("감정 인식 결과:", { newEmotion, newConfidence });
-  
         if (
           newEmotion !== previousEmotion ||
           Math.abs(previousConfidence - newConfidence) >= 0.2
@@ -241,11 +238,8 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
         }
       } catch (error) {
         console.error("감정 인식 실패:", error);
-      } finally {
-        setLoading(false);
       }
     }, 5000);
-  
     return () => clearInterval(interval);
   }, [
     userId,
@@ -256,28 +250,23 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
     previousConfidence,
     loading,
     conversationEnd,
-    messages,
   ]);
 
   // 사용자 메시지 전송 함수
   const sendMessage = async () => {
-    if (!input.trim() || conversationEnd) return; // 대화 종료된 상태에서는 메시지 전송 불가
-
+    if (!input.trim() || conversationEnd) return;
     const userMessage = {
       user_id: userId,
       user_message: input,
       bot_response: "응답 대기 중...",
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-
     try {
       const { botResponse, emotion, confidence } = await sendEmotionChatMessage(
         chatroomId,
         input
       );
-
       setMessages((prev) =>
         prev.map((msg, index) =>
           index === prev.length - 1
@@ -285,8 +274,6 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
             : msg
         )
       );
-
-      // 감정과 신뢰도 업데이트
       setEmotion(emotion, confidence);
     } catch (error) {
       console.error("메시지 전송 실패:", error);
@@ -297,19 +284,19 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const handleEndConversation = async () => {
     try {
       const response = await closeChatroom(chatroomId);
-      console.log("대화 종료 API 응답:", response);
       if (response) {
         setConversationEnd(true);
 
-        // 웹캠 스트림 중단
+        await generateSummaryAndSave(chatroomId);
+
+        // 웹캠 스트림 종료
         if (webcamRef.current && webcamRef.current.video.srcObject) {
           const stream = webcamRef.current.video.srcObject;
-          const tracks = stream.getTracks();
-          tracks.forEach((track) => track.stop());
+          stream.getTracks().forEach((track) => track.stop());
           webcamRef.current.video.srcObject = null;
         }
 
-        alert("대화가 종료되었습니다.");
+        alert("대화가 종료되었습니다. 요약이 저장되었습니다.");
       }
     } catch (error) {
       console.error("대화 종료 실패:", error);
@@ -370,11 +357,14 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
           </Button>
         </InputContainer>
         {/* 대화 종료하기 버튼 */}
-    <EndButtonContainer>
-      <EndButton onClick={handleEndConversation} disabled={conversationEnd}>
-        대화 종료하기
-      </EndButton>
-    </EndButtonContainer>
+        <EndButtonContainer>
+          <EndButton
+            onClick={handleEndConversation}
+            disabled={conversationEnd || loading}
+          >
+            {loading ? "저장 중..." : "대화 종료하기"}
+          </EndButton>
+        </EndButtonContainer>
       </ChatBox>
 
       {/* 웹캠 화면 */}
