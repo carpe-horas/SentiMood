@@ -193,6 +193,7 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const [conversationEnd, setConversationEnd] = useState(false);
   const [previousEmotion, setPreviousEmotion] = useState(null);
   const [previousConfidence, setPreviousConfidence] = useState(null);
+  const [lastUserMessageTime, setLastUserMessageTime] = useState(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -228,6 +229,8 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
       try {
         const result = await predictEmotion(imageSrc, userId, chatroomId);
         const { emotion: newEmotion, confidence: newConfidence } = result;
+
+        // 감정이 변했거나 신뢰도 차이가 0.2 이상일 경우
         if (
           newEmotion !== previousEmotion ||
           Math.abs(previousConfidence - newConfidence) >= 0.2
@@ -235,6 +238,29 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
           setEmotion(newEmotion, newConfidence);
           setPreviousEmotion(newEmotion);
           setPreviousConfidence(newConfidence);
+
+          // 사용자가 마지막으로 응답한 이후 일정 시간이 지났는지 확인 (5초)
+          const now = Date.now();
+          const userRespondedRecently =
+            lastUserMessageTime && now - lastUserMessageTime < 5000;
+
+          // 감정이 변했을 때 챗봇이 말을 걸도록
+          // 감정이 변하더라도 신뢰도가 0.7 미만이면 챗봇이 말을 걸지 않음
+          // 사용자가 응답하지 않은 경우, 같은 감정이면 챗봇이 말을 걸지 않음
+          if (!conversationEnd && newConfidence >= 0.7) {
+            if (!userRespondedRecently && newEmotion === previousEmotion)
+              return;
+
+            // 챗봇 응답
+            const { botResponse } = await sendEmotionChatMessage(
+              chatroomId,
+              ""
+            );
+            setMessages((prev) => [
+              ...prev,
+              { user_message: null, bot_response: botResponse },
+            ]);
+          }
         }
       } catch (error) {
         console.error("감정 인식 실패:", error);
@@ -250,11 +276,14 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
     previousConfidence,
     loading,
     conversationEnd,
+    lastUserMessageTime,
   ]);
 
   // 사용자 메시지 전송 함수
   const sendMessage = async () => {
     if (!input.trim() || conversationEnd) return;
+    setLastUserMessageTime(Date.now());
+
     const userMessage = {
       user_id: userId,
       user_message: input,

@@ -1,16 +1,19 @@
 import pymongo
 from app.database import mongo
 from bson.objectid import ObjectId
-from datetime import datetime, timezone
-# from app.models.diary import Diary/
+from datetime import datetime, timedelta, timezone
 import logging
 
-# 일기장 저장 API
+
+# 일기장 저장
 def create_diary(user_id, chatroom_id, content, date, emotion, summary=None):
     """
     새 일기 저장
     """
     try:
+        # KST(한국 시간)으로 변환
+        kst_now = datetime.now(timezone.utc) + timedelta(hours=9)
+
         # 만약 summary가 None이라면, content만 저장
         diary_data = {
             "user_id": user_id,
@@ -18,8 +21,10 @@ def create_diary(user_id, chatroom_id, content, date, emotion, summary=None):
             "content": content,
             "date": date,
             "emotion": emotion,
-            "summary": summary if summary is not None else None,  # summary가 None일 경우 null로 저장
-            "created_at": datetime.now(timezone.utc)
+            "summary": (
+                summary if summary is not None else None
+            ),  # summary가 None일 경우 null로 저장
+            "created_at": kst_now,
         }
         result = mongo.db.diaries.insert_one(diary_data)
         return str(result.inserted_id)
@@ -28,7 +33,7 @@ def create_diary(user_id, chatroom_id, content, date, emotion, summary=None):
         raise Exception(f"일기 저장 중 오류 발생: {str(e)}")
 
 
-# 일기 목록 조회 API
+# 일기 목록 조회
 def get_diary_list(user_id, date, chatroom_id=None):
     """
     특정 날짜에 작성된 일기 목록 조회
@@ -62,7 +67,7 @@ def get_diary_list(user_id, date, chatroom_id=None):
         raise Exception(f"일기 목록 조회 중 오류 발생: {str(e)}")
 
 
-# 일기 상세 조회 API
+# 일기 상세 조회
 def get_diary_detail(diary_id):
     """
     일기 상세 조회
@@ -76,7 +81,8 @@ def get_diary_detail(diary_id):
     except Exception as e:
         raise Exception(f"일기 상세 조회 중 오류 발생: {str(e)}")
 
-# 일기 삭제 API
+
+# 일기 삭제
 def delete_diary(diary_id):
     """
     일기 삭제
@@ -87,7 +93,8 @@ def delete_diary(diary_id):
     except Exception as e:
         raise Exception(f"일기 삭제 중 오류 발생: {str(e)}")
 
-# 일기 수정 API
+
+# 일기 수정
 def update_diary(diary_id, new_content, new_emotion):
     """
     일기 수정
@@ -95,22 +102,28 @@ def update_diary(diary_id, new_content, new_emotion):
     try:
         result = mongo.db.diaries.update_one(
             {"_id": ObjectId(diary_id)},
-            {"$set": {"content": new_content, "emotion": new_emotion, "updated_at": datetime.now(timezone.utc)}}
+            {
+                "$set": {
+                    "content": new_content,
+                    "emotion": new_emotion,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
         )
         return result.modified_count > 0
     except Exception as e:
         raise Exception(f"일기 수정 중 오류 발생: {str(e)}")
 
-# 일기 검색 API
+
+# 일기 검색
 def search_diary_by_keyword(user_id, keyword):
     """
     일기 내용 검색
     """
     try:
-        diaries = mongo.db.diaries.find({
-            "user_id": user_id,
-            "content": {"$regex": keyword, "$options": "i"}
-        })
+        diaries = mongo.db.diaries.find(
+            {"user_id": user_id, "content": {"$regex": keyword, "$options": "i"}}
+        )
         return [{**diary, "_id": str(diary["_id"])} for diary in diaries]
     except Exception as e:
         raise Exception(f"일기 검색 중 오류 발생: {str(e)}")

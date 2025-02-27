@@ -3,11 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getDiaryDetail } from "../api/diary";
 import { getEmotionIcon } from "../components/Emoji";
-import { createGlobalStyle } from "styled-components";
+// import { createGlobalStyle } from "styled-components";
 
-const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Dongle&display=swap');
-`;
+// const GlobalStyle = createGlobalStyle`
+//   @import url('https://fonts.googleapis.com/css2?family=Dongle&display=swap');
+// `;
 
 const Container = styled.div`
   display: flex;
@@ -63,7 +63,7 @@ const BackButton = styled.button`
 `;
 
 const Title = styled.h1`
-  font-size: 28px;
+  font-size: 30px;
   font-family: "Dongle", sans-serif;
   color: #ff6b81;/
   margin-top: 40px;
@@ -78,7 +78,7 @@ const DateText = styled.p`
 `;
 
 const Content = styled.p`
-  font-size: 15px;
+  font-size: 20px;
   color: #444;
   line-height: 1.8;
   font-family: "Dongle", sans-serif;
