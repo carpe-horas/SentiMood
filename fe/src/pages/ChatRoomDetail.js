@@ -4,7 +4,6 @@ import {
   getChatHistory,
   closeChatroom,
 } from "../api/chat";
-// import { sendMessageToBot } from "../api/chat";
 import useEmotionStore from "../store/emotionStore";
 import { predictEmotion } from "../api/emotion";
 import styled from "styled-components";
@@ -23,21 +22,29 @@ const formatDate = (date) => {
 const ChatBox = styled.div`
   width: 100%;
   max-width: 430px;
-  border: 2px solid #eeeeee;
-  border-radius: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
   background-color: white;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const ChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgb(244, 244, 244);
-  padding: 10px;
-  font-size: 18px;
-  border-bottom: 4px solid white;
+  background-color: rgb(176, 213, 255);
+  padding: 15px;
+  font-size: 25px;
+  font-weight: bold;
+  color: white;
+  border-bottom: 4px solid #ffffff;
+  border-radius: 15px 15px 0 0;
+  width: 100%;
+  transition: transform 0.3s ease;
 `;
 
 const ChatHistory = styled.div`
@@ -45,8 +52,20 @@ const ChatHistory = styled.div`
   height: 450px;
   overflow-y: auto;
   scrollbar-width: thin;
+  scrollbar-color: #a3c6ed #f0f0f0;
+  width: 100%;
+
   &::-webkit-scrollbar {
-    display: block;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #a3c6ed;
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: rgb(104, 197, 251);
   }
 `;
 
@@ -66,36 +85,70 @@ const MessageBubble = styled.div`
   color: ${({ isUser }) => (isUser ? "white" : "black")};
   word-wrap: break-word;
   text-align: left;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const InputContainer = styled.div`
   display: flex;
   padding: 10px;
   background-color: rgb(241, 241, 241);
+  border-top: 1px solid #e0e0e0;
+  width: 100%;
 `;
 
 const Input = styled.input`
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
-  border-radius: 5px;
+  border-radius: 20px;
   background-color: ${({ disabled }) => (disabled ? "#f1f1f1" : "white")};
   color: ${({ disabled }) => (disabled ? "#ccc" : "black")};
   cursor: ${({ disabled }) => (disabled ? "not-allowed" : "text")};
+  transition: background-color 0.3s ease;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 140, 255, 0.5);
+  }
 `;
 
 const Button = styled.button`
-  margin-left: 5px;
-  padding: 10px;
+  margin-left: 10px;
+  padding: 10px 15px;
   background-color: ${({ disabled }) => (disabled ? "#cccccc" : "#A3C6ED")};
   color: ${({ disabled }) => (disabled ? "#999" : "white")};
   border: none;
-  border-radius: 5px;
+  border-radius: 20px;
   cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
+  transition: background-color 0.3s ease, transform 0.3s ease;
+
+  &:hover:not(:disabled) {
+    background-color: ${({ disabled }) => (disabled ? "#cccccc" : "#4a90e2")};
+    transform: scale(1.05);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+`;
+
+const EndButtonContainer = styled.div`
+  display: flex;
+  justify-content: left; 
+  padding: 10px;
+  background-color: rgb(241, 241, 241);
+  border-top: 1px solid #e0e0e0; 
+  border-radius: 0 0 15px 15px; 
+  width: 100%;
 `;
 
 const EndButton = styled.button`
-  margin-left: 5px;
+  margin-left: 15px;
   padding: 10px;
   background-color: ${({ disabled }) => (disabled ? "#cccccc" : "#dc3545")};
   color: ${({ disabled }) => (disabled ? "#999" : "white")};
@@ -105,15 +158,28 @@ const EndButton = styled.button`
 `;
 
 const WebcamContainer = styled.div`
-  width: 50%;
-  max-width: 430px;
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto;
   margin-bottom: 20px;
   border-radius: 15px;
   background-color: black;
-  height: 200px; // 웹캠 화면 크기 설정
+  height: 200px;
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "감정 인식 중...";
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    color: white;
+    font-size: 14px;
+    opacity: 0.8;
+  }
 `;
 
 const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
@@ -150,86 +216,36 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
     };
     fetchMessages();
   }, [chatroomId, emotion, confidence, conversationEnd]);
-  // useEffect(() => {
-  //   const fetchMessages = async () => {
-  //     try {
-  //       // 채팅 내역 가져오기
-  //       const { chats, conversationEnd: endStatus } = await getChatHistory(chatroomId);
-  //       console.log("채팅 내역 API 응답:", chats);
-  //       setMessages(chats);
-  //       setConversationEnd(endStatus);
-
-  //       // 채팅 내역이 비어 있고, 감정 데이터가 있으면 초기 메시지 생성
-  //       if (chats.length === 0 && emotion && !conversationEnd) {
-  //         let initialMessage = "안녕! 오늘 기분 어때? 나랑 얘기해볼래?";
-  //         if (emotion === "sadness") {
-  //           initialMessage = "너 요즘 좀 힘든 것 같아... 무슨 일이야? 나한테 얘기해봐.";
-  //         } else if (emotion === "angry") {
-  //           initialMessage = "뭔가 진짜 화나는 일이 있었던 거 같아. 나한테 얘기해봐, 들어줄게.";
-  //         } else if (emotion === "happy") {
-  //           initialMessage = "오늘 완전 기분 좋네! 무슨 일이야? 같이 기뻐하고 싶어!";
-  //         } else if (emotion === "panic") {
-  //           initialMessage = "너 요즘 좀 불안한 것 같아... 내가 도와줄 수 있을까?";
-  //         }
-
-  //         // 초기 메시지를 채팅창에 추가
-  //         setMessages((prev) => [
-  //           ...prev,
-  //           { user_message: null, bot_response: initialMessage },
-  //         ]);
-  //       }
-  //     } catch (error) {
-  //       console.error("채팅 내역을 가져오는 데 실패했습니다:", error);
-  //     }
-  //   };
-  //   fetchMessages();
-  // }, [chatroomId, emotion, confidence, conversationEnd]);
 
   // 주기적으로 감정 인식 및 감정 변화 반영
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!webcamRef.current || loading) return; // 로딩 중에는 요청 방지
+      if (!webcamRef.current || loading || conversationEnd) return;
       const imageSrc = webcamRef.current.getScreenshot();
       if (!imageSrc) return;
-
+  
       try {
-        setLoading(true);  
-
+        setLoading(true);
         const result = await predictEmotion(imageSrc, userId, chatroomId);
         const { emotion: newEmotion, confidence: newConfidence } = result;
-
-        // 이전 감정과 비교하여 유의미한 변화 감지
-        const isSignificantChange =
-          newEmotion !== previousEmotion &&
-          Math.abs((previousConfidence || 0) - newConfidence) >= 0.2; // 신뢰도 차이 임계값 0.2
-
-        if (isSignificantChange) {
+  
+        console.log("감정 인식 결과:", { newEmotion, newConfidence });
+  
+        if (
+          newEmotion !== previousEmotion ||
+          Math.abs(previousConfidence - newConfidence) >= 0.2
+        ) {
           setEmotion(newEmotion, newConfidence);
-          setPreviousEmotion(newEmotion); 
-          setPreviousConfidence(newConfidence); 
-
-          // 신뢰도가 0.7 이상일 때만 챗봇 응답을 보내도록
-          if (newConfidence >= 0.7) {
-            // 감정 변화에 따른 챗봇 응답 요청
-            const { botResponse } = await sendEmotionChatMessage(
-              chatroomId,
-              ""
-            );
-
-            // 챗봇 응답을 채팅창에 추가
-            setMessages((prev) => [
-              ...prev,
-              { user_message: null, bot_response: botResponse },
-            ]);
-          }
+          setPreviousEmotion(newEmotion);
+          setPreviousConfidence(newConfidence);
         }
       } catch (error) {
         console.error("감정 인식 실패:", error);
       } finally {
-        setLoading(false); 
+        setLoading(false);
       }
-    }, 5000); // 5초마다 감정 인식
-
+    }, 5000);
+  
     return () => clearInterval(interval);
   }, [
     userId,
@@ -239,8 +255,11 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
     previousEmotion,
     previousConfidence,
     loading,
+    conversationEnd,
+    messages,
   ]);
 
+  // 사용자 메시지 전송 함수
   const sendMessage = async () => {
     if (!input.trim() || conversationEnd) return; // 대화 종료된 상태에서는 메시지 전송 불가
 
@@ -254,7 +273,6 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
     setInput("");
 
     try {
-      // 기존의 sendMessageToBot → sendEmotionChatMessage로 변경
       const { botResponse, emotion, confidence } = await sendEmotionChatMessage(
         chatroomId,
         input
@@ -268,6 +286,7 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
         )
       );
 
+      // 감정과 신뢰도 업데이트
       setEmotion(emotion, confidence);
     } catch (error) {
       console.error("메시지 전송 실패:", error);
@@ -281,8 +300,16 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
       console.log("대화 종료 API 응답:", response);
       if (response) {
         setConversationEnd(true);
+
+        // 웹캠 스트림 중단
+        if (webcamRef.current && webcamRef.current.video.srcObject) {
+          const stream = webcamRef.current.video.srcObject;
+          const tracks = stream.getTracks();
+          tracks.forEach((track) => track.stop());
+          webcamRef.current.video.srcObject = null;
+        }
+
         alert("대화가 종료되었습니다.");
-        setSelectedChatroom(null);
       }
     } catch (error) {
       console.error("대화 종료 실패:", error);
@@ -330,7 +357,11 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="메시지를 입력하세요..."
+            placeholder={
+              conversationEnd
+                ? "대화가 종료되었습니다"
+                : "메시지를 입력하세요..."
+            }
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             disabled={conversationEnd}
           />
@@ -338,32 +369,39 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
             전송
           </Button>
         </InputContainer>
-        <InputContainer>
-          <EndButton onClick={handleEndConversation} disabled={conversationEnd}>
-            대화 종료하기
-          </EndButton>
-        </InputContainer>
+        {/* 대화 종료하기 버튼 */}
+    <EndButtonContainer>
+      <EndButton onClick={handleEndConversation} disabled={conversationEnd}>
+        대화 종료하기
+      </EndButton>
+    </EndButtonContainer>
       </ChatBox>
 
       {/* 웹캠 화면 */}
-      <WebcamContainer>
-        <Webcam
-          audio={false}
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          videoConstraints={{ facingMode: "user" }}
-          // style={{ display: "none" }}
-          style={{ display: "block", width: "100%", borderRadius: "10px" }}
-        />
-      </WebcamContainer>
+      {!conversationEnd && (
+        <WebcamContainer>
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/jpeg"
+            videoConstraints={{ facingMode: "user" }}
+            style={{
+              display: "block",
+              width: "100%",
+              borderRadius: "10px",
+            }}
+          />
+        </WebcamContainer>
+      )}
 
       {/* 감정 상태 표시 */}
-      {emotion && (
+      {emotion && !conversationEnd && (
         <div>
           <p style={{ fontSize: "18px", fontWeight: "bold" }}>
             현재 감정: {emotion}
           </p>
           <p>신뢰도: {confidence}%</p>
+          {/* <p>신뢰도: {(confidence * 100).toFixed(2)}%</p> */}
         </div>
       )}
     </div>
