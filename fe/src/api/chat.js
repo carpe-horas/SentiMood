@@ -1,5 +1,4 @@
 import axios from "./config";
-import useEmotionStore from "../store/emotionStore";
 
 // 새로운 채팅방 생성
 export const createChatroom = async () => {
