@@ -53,7 +53,7 @@ const StyledLink = styled(Link)`
   font-size: 16px;
   transition: font-size 0.3s ease, color 0.3s ease;
   &:hover {
-    color: rgb(148, 201, 253);
+    color: rgb(143, 199, 255);
     transform: scale(1.1); 
   }
 `;
