@@ -47,7 +47,8 @@ const ChatListContainer = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: stretch; 
 
   &::-webkit-scrollbar {
     width: 10px;
@@ -122,6 +123,14 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
   useEffect(() => {
     const fetchChatrooms = async () => {
       try {
+        setLoading(true);
+
+        // 캐시된 데이터 확인
+        const cachedData = localStorage.getItem(`chatrooms-${userId}`);
+        if (cachedData) {
+          setChatrooms(JSON.parse(cachedData));
+        }
+
         const rooms = await getUserChatHistory(userId);
         const updatedRooms = await Promise.all(
           rooms.map(async (room) => {
@@ -140,15 +149,24 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
             }
           })
         );
+
+        updatedRooms.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+        // 상태 업데이트 및 캐싱
         setChatrooms(updatedRooms);
-        setLoading(false);
+        localStorage.setItem(
+          `chatrooms-${userId}`,
+          JSON.stringify(updatedRooms)
+        );
       } catch (error) {
         console.error("채팅방 목록 불러오기 실패:", error);
+      } finally {
         setLoading(false);
       }
     };
+
     fetchChatrooms();
-  }, [userId]);
+  }, [userId]); // userId가 변경될 때마다 실행
 
   const handleCreateChatroom = async () => {
     try {
@@ -166,11 +184,6 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
     } catch (error) {
       console.error("채팅방 생성 실패:", error);
     }
-  };
-
-  const formatLastActive = (updatedAt) => {
-    if (!updatedAt) return "";
-    return `최근 대화: ${dayjs(updatedAt).fromNow()}`;
   };
 
   return (
@@ -203,9 +216,10 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
               >
                 <span>{getEmotionIcon(room.emotion)} </span>
                 <span style={{ marginLeft: "10px", textAlign: "right" }}>
-                  {dayjs(room.timestamp).format("YYYY-MM-DD HH:mm")} /{" "}
-                  {formatLastActive(room.updated_at)}{" "}
-                  {room.conversation_end ? "종료된 대화" : "진행중인 대화"}
+                  {room.updated_at
+                    ? dayjs(room.updated_at).format("YYYY-MM-DD HH:mm")
+                    : "날짜 없음"}{" "}
+                  /{room.conversation_end ? "종료된 대화" : "진행중인 대화"}
                 </span>
               </div>
             </ChatRoomItem>

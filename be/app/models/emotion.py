@@ -1,5 +1,6 @@
 from flask_pymongo import PyMongo
-from datetime import datetime, timezone
+from datetime import datetime
+from pytz import timezone  # 한국 표준시(KST) 사용을 위해 추가
 import tensorflow as tf
 import cv2
 import numpy as np
@@ -9,6 +10,8 @@ import uuid
 
 mongo = PyMongo()
 
+# 한국 표준시(KST) 정의
+KST = timezone('Asia/Seoul')
 
 def save_emotion(mongo, user_id, chatroom_id, emotion, confidence):
     """
@@ -29,7 +32,7 @@ def save_emotion(mongo, user_id, chatroom_id, emotion, confidence):
                 "emotion_id": emotion_id,
                 "emotion": emotion,
                 "confidence": confidence,
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(KST),  # KST 기준으로 저장
             }
         )
         print("감정 데이터 저장 성공!")

@@ -14,8 +14,12 @@ from app.services.emotion_service import (
 from datetime import datetime, timezone
 import logging
 from app.utils.auth import jwt_required_without_bearer
+import pytz
 
 diary_bp = Blueprint("diary", __name__)
+
+# 한국 표준시(KST) 정의
+KST = pytz.timezone("Asia/Seoul")
 
 
 # 대화 내용 요약 API
@@ -48,7 +52,10 @@ def summarize_and_save_diary():
     try:
         user_id = request.user_id  
         chatroom_id = request.json.get("chatroom_id")
-        date = request.json.get("date", str(datetime.now(timezone.utc).date())) 
+        
+        date = request.json.get("date") 
+        if not date:
+            date = datetime.now(KST).strftime("%Y-%m-%d")
 
         if not chatroom_id:
             return jsonify({"error": "chatroom_id가 필요합니다."}), 400
