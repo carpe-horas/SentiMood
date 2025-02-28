@@ -1,10 +1,14 @@
 from bson.errors import InvalidId
-from datetime import datetime, timezone
+from datetime import datetime
+import pytz
 from flask_pymongo import PyMongo
 from flask import Flask
 from bson.objectid import ObjectId
 
 mongo = PyMongo()
+
+# 한국 표준시(KST) 정의
+KST = pytz.timezone("Asia/Seoul")
 
 class Diary:
     def __init__(
@@ -27,7 +31,7 @@ class Diary:
         self.emotion = emotion
         self.title = title
         self.tag = tag
-        self.created_at = created_at or datetime.now(timezone.utc)
+        self.created_at = created_at or datetime.now(KST)  # KST 기준으로 저장
         self.updated_at = updated_at
         self.summary = summary
 
@@ -43,7 +47,7 @@ class Diary:
             "emotion": self.emotion,
             "title": self.title,
             "tag": self.tag,
-            "created_at": self.created_at,
+            "created_at": self.created_at,  # KST 기준으로 저장
             "updated_at": self.updated_at,
             "summary": self.summary,
         }
@@ -61,7 +65,7 @@ class Diary:
             emotion=data["emotion"],
             title=data.get("title", None),
             tag=data.get("tag", None),
-            created_at=data.get("created_at", datetime.now(timezone.utc)),
+            created_at=data.get("created_at", datetime.now(KST)),  # KST 기준으로 저장
             updated_at=data.get("updated_at", None),
             summary=data.get("summary", None),
         )
@@ -74,7 +78,7 @@ class Diary:
         """
         if isinstance(diary_data, Diary):
             diary_data = diary_data.to_dict()
-        diary_data["created_at"] = datetime.now(timezone.utc)
+        diary_data["created_at"] = datetime.now(KST)  # KST 기준으로 저장
 
         result = mongo.db.diaries.insert_one(diary_data)
         return str(result.inserted_id)
@@ -126,7 +130,7 @@ class Diary:
             if not update_data:
                 return {"error": "업데이트할 데이터가 없습니다."}, 400
 
-            update_data["updated_at"] = datetime.now(timezone.utc)
+            update_data["updated_at"] = datetime.now(KST)  # KST 기준으로 저장
 
             result = mongo.db.diaries.update_one(
                 {"_id": diary_id}, {"$set": update_data}

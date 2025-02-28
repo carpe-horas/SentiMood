@@ -1,13 +1,17 @@
-from datetime import datetime, timezone
+from datetime import datetime
+import pytz
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
+
+# 한국 표준시(KST) 정의
+KST = pytz.timezone("Asia/Seoul")
 
 mongo = PyMongo()
 
 
 def generate_chatroom_id(user_id):
     """새로운 대화 시작 시 자동으로 채팅방 ID 생성"""
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now(KST).strftime("%Y%m%d%H%M%S")
     return f"{user_id}_{timestamp}"
 
 
@@ -21,13 +25,14 @@ def end_previous_chatroom(user_id):
 
 def auto_end_chatroom_by_date():
     """날짜가 바뀌면 미종료된 대화 자동 종료"""
-    now = datetime.now()
-    today_start = datetime(now.year, now.month, now.day)
+    now = datetime.now(KST)
+    today_start = datetime(now.year, now.month, now.day, tzinfo=KST)
 
     mongo.db.chats.update_many(
         {"conversation_end": False, "timestamp": {"$lt": today_start}},
         {"$set": {"conversation_end": True}},
     )
+
 
 def save_chat(
     user_id: str,
@@ -48,7 +53,7 @@ def save_chat(
                 "user_id": user_id,
                 "chatroom_id": chatroom_id,
                 "chats": [],
-                "updated_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(KST),  # KST 기준으로 저장
             }
             mongo.db.chatrooms.insert_one(chatroom)  # MongoDB에 새로운 채팅방 저장
 
@@ -59,7 +64,7 @@ def save_chat(
             "emotion_id": emotion_id,
             "confidence": confidence,
             "conversation_end": conversation_end,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(KST),  # KST 기준으로 저장
         }
 
         # 채팅방에 채팅 데이터 추가
@@ -71,7 +76,7 @@ def save_chat(
         # 채팅방의 업데이트 시간 기록
         mongo.db.chatrooms.update_one(
             {"chatroom_id": chatroom_id},
-            {"$set": {"updated_at": datetime.now(timezone.utc)}}
+            {"$set": {"updated_at": datetime.now(KST)}},  # KST 기준으로 저장
         )
 
         # 디버깅을 위한 로그 추가

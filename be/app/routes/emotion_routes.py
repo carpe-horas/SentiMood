@@ -189,7 +189,7 @@ def user_history():
 
 # 감정 통계 조회 API
 @emotion_bp.route("/stats", methods=["GET"])
-@jwt_required_without_bearer  # JWT 인증 추가
+@jwt_required_without_bearer 
 def emotion_stats():
     """사용자의 감정 통계를 조회 (주간, 월간 등)"""
     try:
