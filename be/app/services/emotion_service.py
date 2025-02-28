@@ -176,13 +176,12 @@ def get_most_common_emotion(emotion_data):
 
 def get_emotion_statistics(user_id, start_date, end_date):
     """
-    특정 기간 동안 감정 통계 계산
+    특정 기간 동안 감정 통계 계산 (감정 요약 + 감정 변화)
     :param user_id: 사용자 ID
     :param start_date: 시작 날짜 (ISO 형식, 예: '2023-02-01')
     :param end_date: 종료 날짜 (ISO 형식, 예: '2023-02-28')
     """
     try:
-        # MongoDB에서 해당 기간의 감정 데이터 조회
         query = {
             "user_id": user_id,
             "timestamp": {
@@ -191,11 +190,38 @@ def get_emotion_statistics(user_id, start_date, end_date):
             },
         }
         emotions = mongo.db.emotions.find(query)
+
         # 감정별 빈도수 계산
         emotion_counts = {"happy": 0, "sadness": 0, "angry": 0, "panic": 0}
+        trend_data = []  # 감정 변화 저장 (날짜별 감정 변화)
+
         for emotion in emotions:
             emotion_counts[emotion["emotion"]] += 1
-        return emotion_counts
+            trend_data.append(
+                {
+                    "date": emotion["timestamp"].strftime(
+                        "%Y-%m-%d"
+                    ),  # datetime → 문자열 변환 후 날짜만 추출
+                    "emotion": emotion["emotion"],
+                    "confidence": emotion["confidence"],
+                }
+            )
+
+        # 감정 빈도수를 퍼센트(%)로 변환
+        total = sum(emotion_counts.values())
+        if total > 0:
+            summary = {
+                emotion: round((count / total) * 100, 2)
+                for emotion, count in emotion_counts.items()
+            }
+        else:
+            summary = {emotion: 0 for emotion in emotion_counts.keys()}
+
+        return {
+            "summary": summary,
+            "trend": sorted(trend_data, key=lambda x: x["date"]),
+        }
+
     except Exception as e:
         raise RuntimeError(f"감정 통계 조회 오류: {e}")
 
