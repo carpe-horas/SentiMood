@@ -15,7 +15,7 @@ const ChatListBox = styled.div`
   max-width: 430px;
   border: 2px solid #e0e0e0;
   border-radius: 20px;
-  background-color: white;
+  background-color: rgb(255, 255, 255);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
   display: flex;
@@ -28,12 +28,12 @@ const ChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgb(176, 213, 255);
+  background-color: rgb(148, 195, 248);
   padding: 15px;
   font-size: 25px;
   font-weight: bold;
-  color: white;
-  border-bottom: 4px solid #ffffff;
+  color: rgb(255, 255, 255);
+  border-bottom: 4px solidrgb(255, 255, 255);
   border-radius: 15px 15px 0 0;
   width: 100%;
 `;
@@ -48,7 +48,7 @@ const ChatListContainer = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: stretch; 
+  align-items: stretch;
 
   &::-webkit-scrollbar {
     width: 10px;
@@ -65,19 +65,33 @@ const ChatListContainer = styled.div`
 const ChatRoomItem = styled.div`
   width: 100%;
   padding: 15px;
-  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  background-color: #fff;
+  background-color: rgb(230, 245, 255);
   display: flex;
   flex-direction: column;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+
   &:hover {
-    background-color: rgb(171, 215, 253);
-    transform: scale(1.02);
+    background-color: rgb(163, 215, 249);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
+
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    background-color: rgb(111, 188, 251);
+    transition: transform 0.1s ease;
+  }
+
   span {
     transition: font-size 0.3s ease, color 0.3s ease;
   }
+
   &:hover span:first-child {
     font-size: 1.5em;
   }
@@ -94,9 +108,9 @@ const LoadingContainer = styled.div`
 `;
 
 const CreateChatButton = styled.button`
-  margin: 10px;
+  margin: 12px;
   padding: 12px 20px;
-  background-color: rgb(102, 185, 252);
+  background-color: rgb(131, 199, 254);
   color: white;
   border: none;
   border-radius: 20px;
@@ -104,9 +118,18 @@ const CreateChatButton = styled.button`
   font-size: 16px;
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+
   &:hover {
     background-color: rgb(48, 162, 255);
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  &:active {
+    transform: translateY(3px) scale(0.97);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    background-color: rgb(38, 140, 220);
   }
 `;
 
@@ -150,7 +173,9 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
           })
         );
 
-        updatedRooms.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        updatedRooms.sort(
+          (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+        );
 
         // 상태 업데이트 및 캐싱
         setChatrooms(updatedRooms);
@@ -189,14 +214,19 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
   return (
     <ChatListBox>
       <ChatHeader>대화 목록</ChatHeader>
-      <CreateChatButton onClick={handleCreateChatroom}>
+      <CreateChatButton
+        onClick={() => {
+          setTimeout(() => {
+            handleCreateChatroom();
+          }, 300);
+        }}
+      >
         + 새 대화하기
       </CreateChatButton>
 
       {/* 로딩 상태일 때만 로딩 스피너와 텍스트 표시 */}
       {loading ? (
         <LoadingContainer>
-          {/* <ClipLoader size={50} color="#36D7B7" /> */}
           <BeatLoader size={50} color="#5f71f5" />
           <LoadingText>채팅 목록을 불러오는 중입니다...</LoadingText>
         </LoadingContainer>
@@ -205,7 +235,11 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
           {chatrooms.map((room) => (
             <ChatRoomItem
               key={room.chatroom_id}
-              onClick={() => setSelectedChatroom(room.chatroom_id)}
+              onClick={() => {
+                setTimeout(() => {
+                  setSelectedChatroom(room.chatroom_id);
+                }, 300);
+              }}
             >
               <div
                 style={{

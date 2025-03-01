@@ -1785,68 +1785,111 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "example": "diary_123"
+                            "example": "65db123456abcdef7890abcd"
                         }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "content": {
-                                        "type": "string",
-                                        "description": "새로운 일기 내용",
-                                        "example": "오늘은 날씨가 정말 좋았다."
-                                    },
-                                    "emotion": {
-                                        "type": "string",
-                                        "description": "새로운 감정 상태",
-                                        "example": "행복"
-                                    }
-                                },
-                                "required": [
-                                    "content"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "일기 수정 성공",
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "message": {
+                                "content": {
                                     "type": "string",
-                                    "example": "일기 수정 성공!"
+                                    "description": "수정할 일기 내용",
+                                    "example": "오늘 하루는 매우 즐거웠다!"
+                                },
+                                "emotion": {
+                                    "type": "string",
+                                    "description": "수정할 감정 상태",
+                                    "example": "happy"
+                                }
+                            },
+                            "required": [
+                                "content",
+                                "emotion"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "일기 수정 성공",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "일기 수정 성공!"
+                                        },
+                                        "diary_id": {
+                                            "type": "string",
+                                            "example": "65db123456abcdef7890abcd"
+                                        },
+                                        "updated_content": {
+                                            "type": "string",
+                                            "example": "오늘 하루는 매우 즐거웠다!"
+                                        },
+                                        "updated_emotion": {
+                                            "type": "string",
+                                            "example": "happy"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "example": "2025-03-01T12:30:45.123456+09:00"
+                                        }
+                                    }
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "일기 수정 실패",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string",
-                                    "example": "일기 내용은 필수입니다!"
+                        "description": "잘못된 요청 (필수 값 누락)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "필수 값이 누락되었습니다."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "권한 없음",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "권한이 없습니다."
+                                        }
+                                    }
                                 }
                             }
                         }
                     },
                     "500": {
                         "description": "서버 내부 오류",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string",
-                                    "example": "서버 내부 오류"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "서버 내부 오류"
+                                        }
+                                    }
                                 }
                             }
                         }

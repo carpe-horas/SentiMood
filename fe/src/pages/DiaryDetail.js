@@ -95,11 +95,29 @@ const EmotionContainer = styled.div`
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 `;
 
 const EmotionIcon = styled.span`
   font-size: 26px;
+`;
+
+const EditButton = styled.button`
+  background-color: #ffb6c1;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 20px;
+  transition: all 0.3s ease-in-out;
+
+  &:hover {
+    background-color: #ff9aa2;
+    transform: scale(1.05);
+  }
 `;
 
 const DiaryDetail = () => {
@@ -126,7 +144,11 @@ const DiaryDetail = () => {
   }, [id]);
 
   const handleGoBack = () => {
-    navigate(-1);
+    navigate("/calendar");
+  };
+
+  const handleEdit = () => {
+    navigate(`/diary/edit/${id}`);
   };
 
   return (
@@ -150,6 +172,7 @@ const DiaryDetail = () => {
           <Content>{diary.content}</Content>
         </Card>
       )}
+      <EditButton onClick={handleEdit}>수정하기</EditButton>
     </Container>
   );
 };

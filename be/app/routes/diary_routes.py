@@ -191,14 +191,24 @@ def update_diary_route(diary_id):
         if not diary or diary["user_id"] != user_id:
             return jsonify({"message": "권한이 없습니다."}), 403
 
+        # 수정된 일기 업데이트
+        updated_at = datetime.now(KST).isoformat()  
         success = update_diary(diary_id, new_content, new_emotion)
+
         if success:
-            return jsonify({"message": "일기 수정 성공!"}), 200
+            return jsonify({
+                "message": "일기 수정 성공!",
+                "diary_id": diary_id,
+                "updated_content": new_content,
+                "updated_emotion": new_emotion,
+                "updated_at": updated_at
+            }), 200
         return jsonify({"message": "일기 수정 실패!"}), 400
 
     except Exception as e:
         logging.error(f"[ERROR] /update/<diary_id>: {e}")
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
+
 
 
 # 일기 검색 API

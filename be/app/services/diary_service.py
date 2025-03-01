@@ -116,9 +116,10 @@ def update_diary(diary_id, new_content, new_emotion):
     :param diary_id: 일기 ID
     :param new_content: 수정된 일기 내용
     :param new_emotion: 수정된 감정
+    :return: 수정 성공 여부 (True/False)
     """
     try:
-        kst_now = datetime.now(KST)
+        kst_now = datetime.now(KST).isoformat()
 
         result = mongo.db.diaries.update_one(
             {"_id": ObjectId(diary_id)},
@@ -126,13 +127,15 @@ def update_diary(diary_id, new_content, new_emotion):
                 "$set": {
                     "content": new_content,
                     "emotion": new_emotion,
-                    "updated_at": kst_now.isoformat(),  
+                    "updated_at": kst_now,
                 }
             },
         )
+
         return result.modified_count > 0
     except Exception as e:
         raise Exception(f"일기 수정 중 오류 발생: {str(e)}")
+
 
 
 # 일기 검색
