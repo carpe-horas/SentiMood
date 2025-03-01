@@ -7,6 +7,11 @@ const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  html, body, #root {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   body {
     font-family: 'Arial', sans-serif;
     background-color: #f5f5f5;
