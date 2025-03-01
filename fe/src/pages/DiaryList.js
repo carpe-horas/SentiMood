@@ -21,10 +21,11 @@ const DiaryEmoji = styled.span`
 `;
 
 const DiaryListWrapper = styled.div`
-  margin-top: 50px;
+  margin-top: 40px;
   padding: 15px;
   width: 90%;
-  max-width: 500px;
+  min-width: 430px;
+  max-width: 800px;
   background: white;
   border-radius: 10px;
   box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);

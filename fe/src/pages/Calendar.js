@@ -11,15 +11,17 @@ import timezone from "dayjs/plugin/timezone";
 import DiaryList from "./DiaryList";
 import { RingLoader } from "react-spinners";
 import { useMemo } from "react";
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
 const CalendarWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   min-height: 100vh;
-  background-color: rgb(233, 243, 251);
+  background: linear-gradient(to top, rgb(214, 231, 249), #f0f4f8);
   padding: 20px;
   box-sizing: border-box;
   h2 {
@@ -51,8 +53,11 @@ const StyledCalendar = styled(Calendar)`
   padding: 20px;
   font-size: 15px;
   width: 90%;
-  min-height: 535px;
+  max-width: 800px;
   min-width: 430px;
+  min-height: 535px;
+  margin: 0 auto;
+
   .react-calendar__month-view__days__day--neighboringMonth {
     color: rgba(157, 157, 157, 0.31) !important;
     pointer-events: none;
@@ -66,6 +71,7 @@ const StyledCalendar = styled(Calendar)`
     justify-content: space-between;
     align-items: center;
     min-height: 50px;
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
   }
   .react-calendar__navigation button {
     color: white;
@@ -88,6 +94,7 @@ const StyledCalendar = styled(Calendar)`
     background-color: rgb(247, 218, 238);
     border-radius: 10px;
     margin-bottom: 15px;
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
   }
   .react-calendar__tile {
     height: 80px;
@@ -102,11 +109,14 @@ const StyledCalendar = styled(Calendar)`
     padding: 5px;
     background-color: rgb(255, 246, 252);
     position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .react-calendar__tile:hover {
     background: #bbdefb;
-    transform: scale(1.05);
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    transform: scale(1.07) translateY(-3px);
+    color: #03396c;
+    font-weight: bold;
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.2);
   }
   .react-calendar__tile--active {
     background: #64b5f6 !important;
@@ -168,7 +178,10 @@ const CalendarPage = () => {
             const response = await getChatEndStatus(chatroomId);
             return { chatroomId, ...response };
           } catch (error) {
-            console.error(`[ERROR] 채팅방(${chatroomId}) 종료 상태 조회 실패:`, error);
+            console.error(
+              `[ERROR] 채팅방(${chatroomId}) 종료 상태 조회 실패:`,
+              error
+            );
             return null;
           }
         });
@@ -246,7 +259,9 @@ const CalendarPage = () => {
 
     if (!computedTimestamp || !representativeEmotion) return null;
 
-    const formattedDate = dayjs(computedTimestamp).tz("Asia/Seoul").format("YYYY-MM-DD");
+    const formattedDate = dayjs(computedTimestamp)
+      .tz("Asia/Seoul")
+      .format("YYYY-MM-DD");
     const emoji = emotionIcons[representativeEmotion] || "😐";
     return { date: formattedDate, emoji };
   };
@@ -266,7 +281,9 @@ const CalendarPage = () => {
   }, [chatEmotions]);
 
   const handleDateClick = async (selectedDate) => {
-    const formattedDate = dayjs(selectedDate).tz("Asia/Seoul").format("YYYY-MM-DD");
+    const formattedDate = dayjs(selectedDate)
+      .tz("Asia/Seoul")
+      .format("YYYY-MM-DD");
     setSelectedDate(formattedDate);
     try {
       const diaries = await getDiaryList(formattedDate);
@@ -305,7 +322,8 @@ const CalendarPage = () => {
           onClickDay={handleDateClick}
           tileClassName={({ date, view, activeStartDate }) => {
             if (view === "month") {
-              const isCurrentMonth = date.getMonth() === activeStartDate.getMonth();
+              const isCurrentMonth =
+                date.getMonth() === activeStartDate.getMonth();
               return isCurrentMonth
                 ? ""
                 : "react-calendar__month-view__days__day--neighboringMonth";
