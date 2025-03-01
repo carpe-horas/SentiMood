@@ -5,12 +5,15 @@ from app.database import mongo
 from app.services.rag_service import retrieve_relevant_documents
 from app.services.llm_service import generate_response
 from app.models.chat import save_chat
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import current_app
 import uuid
 from flask import jsonify
 import logging
 from app.services.emotion_service import get_emotion_results
+from pytz import timezone  
+KST = timezone('Asia/Seoul') 
+
 
 def chat_with_bot(user_id: str, chatroom_id: str, user_message: str, emotion_id=None, confidence=None, test_mode=False) -> dict:
   
@@ -57,7 +60,6 @@ def chat_with_bot(user_id: str, chatroom_id: str, user_message: str, emotion_id=
         else:
             chat_id = "test_chat_id"
 
-        # JSON 형식의 응답 반환
         return {
             "user_message": user_message,
             "retrieved_documents": retrieved_status,
@@ -99,8 +101,7 @@ def end_chatroom(user_id: str, chatroom_id: str) -> dict:
     :return: 종료된 채팅방에 대한 메시지
     """
     try:
-        # 사용자에 맞는 채팅방을 찾기
-        chatroom = mongo.db.chatrooms.find_one({"user_id": user_id, "chatroom_id": chatroom_id})
+        chatroom = mongo.db.chatrooms.find_one({"chatroom_id": chatroom_id, "user_id": user_id})
         
         if not chatroom:
             raise NotFound(f"사용자의 채팅방을 찾을 수 없습니다.")
@@ -108,15 +109,20 @@ def end_chatroom(user_id: str, chatroom_id: str) -> dict:
         if chatroom.get("conversation_end"):
             return {"message": "이미 종료된 채팅방입니다."}
         
-        # 채팅방 종료 처리
+        kst_now = datetime.now(KST)
+
         result = mongo.db.chatrooms.update_one(
             {"chatroom_id": chatroom_id},
-            {"$set": {"conversation_end": True}}
+            {
+                "$set": {
+                    "conversation_end": True,
+                    "conversation_end_timestamp": kst_now.isoformat()  
+                }
+            }
         )
         print(f"[DEBUG] update result: {result.modified_count}")
         
         if result.modified_count == 0:
-            # 채팅방이 존재하지 않거나 업데이트되지 않은 경우
             return {"error": f"채팅방 {chatroom_id}을 찾을 수 없습니다."}
         
         return {"message": "채팅방 종료 완료"}
@@ -138,7 +144,6 @@ def get_chat_end_status_service(user_id, chatroom_id):
     :return: 채팅방 종료 상태 및 감정 데이터
     """
     try:
-        # 채팅방 존재 여부 확인
         chatroom = mongo.db.chatrooms.find_one({"chatroom_id": chatroom_id, "user_id": user_id})
 
         if not chatroom:
@@ -161,7 +166,7 @@ def get_chat_end_status_service(user_id, chatroom_id):
             "chatroom_id": chatroom_id,
             "conversation_end": conversation_end,
             "conversation_end_timestamp": conversation_end_timestamp,
-            "emotions": emotion_data["emotions"]  # 항상 리스트 형태로 반환
+            "emotions": emotion_data["emotions"] 
         }, 200
 
     except Exception as e:
@@ -174,17 +179,16 @@ def get_chat_end_status_service(user_id, chatroom_id):
         return {"error": "서버 내부 오류"}, 500
 
 
-
 def create_chatroom(user_id: str) -> str:
     """
-    새로운 채팅 채팅방 생성하는 함수
-
+    새로운 채팅방 생성하는 함수
     :param user_id: 사용자의 고유 ID
     :return: 생성된 채팅방 ID
     """
     try:
-        chatroom_id = str(uuid.uuid4()) 
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        chatroom_id = str(uuid.uuid4())
+        # UTC → KST 변환
+        timestamp = datetime.now(KST).strftime("%Y%m%d%H%M%S")  
         
         chatroom_data = {
             "user_id": user_id,
@@ -210,25 +214,32 @@ def get_user_chat_history(user_id: str) -> list:
     :return: 사용자의 채팅방 목록
     """
     try:
-        # MongoDB에서 사용자의 채팅방 목록 조회
         chatrooms = list(mongo.db.chatrooms.find({"user_id": user_id}))
-        
+
         if not chatrooms:
             print(f"[DEBUG] 사용자 {user_id}의 기존 채팅방이 없음.")
             return []
 
-        # JSON 변환을 위해 ObjectId 변환 처리
-        result = [
-            {
+        result = []
+        for chatroom in chatrooms:
+            timestamp = chatroom.get("timestamp")
+
+            # timestamp가 문자열이라면 datetime 객체로 변환
+            if isinstance(timestamp, str) and len(timestamp) == 14:
+                timestamp = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
+            
+            # 디버깅 로그 추가
+            print(f"[DEBUG] 채팅방 ID: {chatroom['chatroom_id']}, timestamp: {timestamp}")
+
+            result.append({
                 "chatroom_id": chatroom["chatroom_id"],
-                "timestamp": chatroom["timestamp"],
-                "conversation_end": chatroom["conversation_end"]
-            }
-            for chatroom in chatrooms
-        ]
-        print(f"[DEBUG] 사용자 {user_id}의 기존 채팅방 목록: {result}")
+                "timestamp": timestamp.isoformat() if timestamp else None,  # ISO 형식 변환
+                "conversation_end": chatroom["conversation_end"],
+                "updated_at": chatroom.get("updated_at")
+            })
+
         return result
-    
+
     except Exception as e:
         print(f"[ERROR] 채팅방 조회 오류 (user_id={user_id}): {e}")
         raise RuntimeError("채팅방 조회 중 오류가 발생했습니다.")
@@ -248,12 +259,14 @@ def add_chat(user_id, chatroom_id, user_message, bot_response, emotion_id=None, 
     :return: 성공 여부
     """
     if mongo.db is None:
-        raise RuntimeError("MongoDB 연결이 설정되지 않았습니다.")
+        raise RuntimeError("MongoDB 연결이 설정되지 않았습니다.") 
 
     try:
         if not isinstance(chatroom_id, str) or not is_valid_uuid(chatroom_id):
             raise ValueError("유효하지 않은 chatroom_id입니다.")
         
+        kst_now = datetime.now(KST)
+
         chat_data = {
             "user_id": user_id,
             "user_message": user_message,
@@ -261,10 +274,9 @@ def add_chat(user_id, chatroom_id, user_message, bot_response, emotion_id=None, 
             "emotion_id": emotion_id,
             "confidence": confidence,
             "conversation_end": conversation_end,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": kst_now.isoformat(),  
         }
         
-        # 채팅방 존재 여부 확인
         existing_chatroom = mongo.db.chatrooms.find_one({"chatroom_id": chatroom_id})
 
         # 채팅방이 없으면 새로운 채팅방 생성
@@ -274,8 +286,8 @@ def add_chat(user_id, chatroom_id, user_message, bot_response, emotion_id=None, 
                 "user_id": user_id,
                 "chatroom_id": chatroom_id,
                 "chats": [chat_data],
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "created_at": kst_now.isoformat(),  
+                "updated_at": kst_now.isoformat(),  
                 "conversation_end": conversation_end
             }
             mongo.db.chatrooms.insert_one(chatroom_data)
@@ -286,7 +298,7 @@ def add_chat(user_id, chatroom_id, user_message, bot_response, emotion_id=None, 
                 {
                     "$push": {"chats": chat_data},
                     "$set": {
-                        "updated_at": datetime.now(timezone.utc),
+                        "updated_at": kst_now.isoformat(), 
                         "conversation_end": conversation_end
                     }
                 }
@@ -430,7 +442,6 @@ def get_user_chatroom_history(user_id, chatroom_id, limit):
         raise
 
 
-
 def delete_chatroom_service(user_id: str, chatroom_id: str) -> bool:
     """
     특정 사용자의 채팅방을 삭제하는 서비스 로직
@@ -463,11 +474,9 @@ def search_chatrooms(user_id: str, query: str) -> list:
     :return: 검색된 채팅방 목록
     """
     try:
-        # 검색어 유효성 검사
         if not query.strip():
             raise BadRequest("검색어가 비어 있습니다.")
 
-        # MongoDB에서 채팅방 검색
         chatrooms = list(mongo.db.chatrooms.find({
             "user_id": user_id,
             "$or": [
@@ -476,7 +485,6 @@ def search_chatrooms(user_id: str, query: str) -> list:
             ]
         }))
 
-        # 결과 포맷팅
         result = [
             {
                 "chatroom_id": chatroom["chatroom_id"],

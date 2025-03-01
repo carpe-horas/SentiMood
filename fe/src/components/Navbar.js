@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";  
 import useAuthStore from "../store/authStore";
 import styled from "styled-components";
 
@@ -8,7 +8,13 @@ const Nav = styled.nav`
   align-items: center;
   justify-content: space-between;
   padding: 15px 20px;
-  background: #f8f9fa;
+  background:rgb(255, 255, 255);
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: ${({ scrolled }) => (scrolled ? "0 4px 6px rgba(0, 0, 0, 0.1)" : "none")};
 `;
 
 const Logo = styled(Link)`
@@ -17,9 +23,9 @@ const Logo = styled(Link)`
   text-decoration: none;
   color: black;
   margin-right: 40px;
-
   &:hover {
     color: rgb(148, 201, 253);
+    transform: scale(1.2);
   }
 `;
 
@@ -45,9 +51,10 @@ const StyledLink = styled(Link)`
   text-decoration: none;
   color: black;
   font-size: 16px;
-
+  transition: font-size 0.3s ease, color 0.3s ease;
   &:hover {
-    color: rgb(148, 201, 253);
+    color: rgb(143, 199, 255);
+    transform: scale(1.1); 
   }
 `;
 
@@ -61,15 +68,11 @@ const StyledButton = styled.button`
   margin-right: 20px;
   text-decoration: none;
   outline: none;
-
+  transition: font-size 0.3s ease, color 0.3s ease;
   &:hover {
     color: rgb(255, 114, 96);
     background: none;
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: none;
+    transform: scale(1.1);
   }
 `;
 
@@ -78,31 +81,56 @@ const SignupLink = styled(Link)`
   text-decoration: none;
   color: black;
   font-size: 16px;
-
+  transition: font-size 0.3s ease, color 0.3s ease;
   &:hover {
     color: rgb(148, 201, 253);
+    transform: scale(1.1);
   }
 `;
 
 const Navbar = () => {
   const { isAuthenticated, logout } = useAuthStore();
+  const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();  
+
+  // 스크롤 이벤트 핸들러
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");  
+  };
+
   return (
-    <Nav>
+    <Nav scrolled={scrolled}>
       <NavContainer>
-        {/* 왼쪽 로고 (로그인 전: 랜딩 페이지, 로그인 후: 홈 화면) */}
+        {/* 왼쪽 로고 */}
         <Logo to={isAuthenticated ? "/home" : "/"}>RobotPet</Logo>
-        {/* RobotPet 오른쪽에 위치할 메뉴 */}
+        {/* 로그인 후 메뉴 */}
         {isAuthenticated && (
           <MenuLeft>
-            <StyledLink to="/chat">채팅</StyledLink>
+            <StyledLink to="/chat">챗봇</StyledLink>
             <StyledLink to="/calendar">캘린더</StyledLink>
           </MenuLeft>
         )}
       </NavContainer>
-      {/* 오른쪽 끝에 위치할 메뉴 */}
+      {/* 오른쪽 메뉴 */}
       {isAuthenticated ? (
         <MenuRight>
-          <StyledButton onClick={logout}>로그아웃</StyledButton>
+          <StyledButton onClick={handleLogout}>로그아웃</StyledButton>
         </MenuRight>
       ) : (
         <MenuRight>
