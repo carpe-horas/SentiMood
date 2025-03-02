@@ -226,6 +226,42 @@ const WebcamContainer = styled.div`
   }
 `;
 
+const EmotionStatusContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: fit-content;
+  margin-bottom: 50px;
+`;
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; 
+  visibility: ${({ visible }) => (visible ? "visible" : "hidden")};
+  opacity: ${({ visible }) => (visible ? 1 : 0)};
+  transition: visibility 0.3s ease, opacity 0.3s ease;
+`;
+
+const LoadingSpinnerContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+`;
+
+
 const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const webcamRef = useRef(null);
   const { emotion, confidence, setEmotion } = useEmotionStore();
@@ -234,8 +270,6 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [conversationEnd, setConversationEnd] = useState(false);
-  // const [previousEmotion, setPreviousEmotion] = useState(null);
-  // const [previousConfidence, setPreviousConfidence] = useState(null);
   const [lastUserMessageTime, setLastUserMessageTime] = useState(null);
 
   const prevEmotionRef = useRef(null);
@@ -396,7 +430,15 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
   const formattedDate = formatDate(chatroomDate);
 
   return (
-    <div>
+    <>
+      {/* 로딩 중일 때 어두운 오버레이 */}
+      <LoadingOverlay visible={loading}>
+        <LoadingSpinnerContainer>
+          <ClockLoader color="#ffffff" size={50} />
+          <div style={{ marginTop: "20px" }}>저장 중...</div>
+        </LoadingSpinnerContainer>
+      </LoadingOverlay>
+  
       <ChatRoomWrapper>
         <ChatBox>
           <ChatHeader>
@@ -466,6 +508,7 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
           </EndButtonContainer>
         </ChatBox>
       </ChatRoomWrapper>
+  
       {/* 웹캠 화면 */}
       {!conversationEnd && (
         <WebcamContainer>
@@ -482,19 +525,18 @@ const ChatRoomDetail = ({ userId, chatroomId, setSelectedChatroom }) => {
           />
         </WebcamContainer>
       )}
-
+  
       {/* 감정 상태 표시 */}
       {emotion && !conversationEnd && (
-        <div>
+        <EmotionStatusContainer>
           <p style={{ fontSize: "18px", fontWeight: "bold" }}>
             현재 감정: {emotion}
           </p>
           <p>신뢰도: {confidence}%</p>
-          {/* <p>신뢰도: {(confidence * 100).toFixed(2)}%</p> */}
-        </div>
+        </EmotionStatusContainer>
       )}
-    </div>
+    </>
   );
-};
-
-export default ChatRoomDetail;
+  };
+  
+  export default ChatRoomDetail;

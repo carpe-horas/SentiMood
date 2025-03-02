@@ -93,8 +93,8 @@ export const getEmotionResults = async (chatroomId) => {
  */
 export const getEmotionStats = async (startDate, endDate) => {
   try {
-    const startDateKST = `${startDate}T00:00:00+09:00`; 
-    const endDateKST = `${endDate}T23:59:59+09:00`; 
+    const startDateKST = `${startDate}T00:00:00+09:00`;
+    const endDateKST = `${endDate}T23:59:59+09:00`;
 
     console.log("[DEBUG] API 요청 startDate:", startDateKST);
     console.log("[DEBUG] API 요청 endDate:", endDateKST);
@@ -109,7 +109,6 @@ export const getEmotionStats = async (startDate, endDate) => {
     return null;
   }
 };
-
 
 /**
  * 감정 데이터 삭제
@@ -127,21 +126,6 @@ export const deleteEmotionData = async (emotionId) => {
 };
 
 /**
- * 자동 감정 종료 처리
- * @param {string} chatroomId
- * @returns {Promise<Object>}
- */
-export const autoEndEmotions = async (chatroomId) => {
-  try {
-    const response = await api.post(`/emotion/auto-end/${chatroomId}`);
-    return response.data;
-  } catch (error) {
-    console.error("자동 감정 종료 실패:", error);
-    throw new Error("자동 감정 종료 실패");
-  }
-};
-
-/**
  * 감정 분석 모델 상태 조회
  * @returns {Promise<Object>}
  */
@@ -152,21 +136,6 @@ export const getModelStatus = async () => {
   } catch (error) {
     console.error("모델 상태 조회 실패:", error);
     throw new Error("모델 상태 조회 실패");
-  }
-};
-
-/**
- * 사용자의 감정 분석 히스토리 조회
- * @param {string} userId
- * @returns {Promise<Object>}
- */
-export const getUserEmotionHistory = async (userId) => {
-  try {
-    const response = await api.get(`/emotion/history/${userId}`);
-    return response.data;
-  } catch (error) {
-    console.error("감정 히스토리 조회 실패:", error);
-    throw new Error("감정 히스토리 조회 실패");
   }
 };
 

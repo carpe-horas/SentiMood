@@ -4,12 +4,13 @@ from dotenv import load_dotenv
 # .env 파일 로드
 load_dotenv()
 
+
 class Config:
     """기본 환경 설정"""
 
     # Flask 설정
     SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
-    
+
     # 관계형 DB (MySQL) 설정
     DB_HOST = os.getenv("DB_HOST")
     DB_USER = os.getenv("DB_USER")
@@ -17,9 +18,13 @@ class Config:
     DB_NAME = os.getenv("DB_NAME")
 
     if not all([DB_HOST, DB_USER, DB_PASSWORD, DB_NAME]):
-        raise ValueError("환경 변수(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)가 설정되지 않았습니다.")
-    
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+        raise ValueError(
+            "환경 변수(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)가 설정되지 않았습니다."
+        )
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # MongoDB 설정
@@ -41,17 +46,30 @@ class Config:
 
     # Swagger 관련 설정
     SWAGGER_UI_URL = os.getenv("SWAGGER_UI_URL", "/api/docs")  # Swagger UI 기본 경로
-    SWAGGER_API_DOCS = os.getenv("SWAGGER_API_DOCS", "/static/swagger.json")  # Swagger JSON 문서 경로
+    SWAGGER_API_DOCS = os.getenv(
+        "SWAGGER_API_DOCS", "/static/swagger.json"
+    )  # Swagger JSON 문서 경로
+
+    # 모델 경로 설정 (반드시 .env에서 설정해야 함)
+    MODEL_PATH = os.getenv("MODEL_PATH")
+
+    # 필수 환경 변수 확인
+    if not MODEL_PATH:
+        raise ValueError(
+            "환경 변수 MODEL_PATH가 설정되지 않았습니다. .env 파일을 확인하세요."
+        )
 
 
 class ProductionConfig(Config):
     """배포 환경 설정"""
+
     DEBUG = False
     BASE_URL = os.getenv("PROD_BASE_URL", "http://localhost:3000")
 
 
 class DevelopmentConfig(Config):
     """개발 환경 설정"""
+
     DEBUG = True
     BASE_URL = os.getenv("DEV_BASE_URL", "http://localhost:3000")
 

@@ -53,9 +53,9 @@ def save_chat(
                 "user_id": user_id,
                 "chatroom_id": chatroom_id,
                 "chats": [],
-                "updated_at": datetime.now(KST),  # KST 기준으로 저장
+                "updated_at": datetime.now(KST),
             }
-            mongo.db.chatrooms.insert_one(chatroom)  # MongoDB에 새로운 채팅방 저장
+            mongo.db.chatrooms.insert_one(chatroom)
 
         # 채팅 데이터 생성
         chat_data = {
@@ -64,7 +64,7 @@ def save_chat(
             "emotion_id": emotion_id,
             "confidence": confidence,
             "conversation_end": conversation_end,
-            "timestamp": datetime.now(KST),  # KST 기준으로 저장
+            "timestamp": datetime.now(KST),
         }
 
         # 채팅방에 채팅 데이터 추가
@@ -76,10 +76,9 @@ def save_chat(
         # 채팅방의 업데이트 시간 기록
         mongo.db.chatrooms.update_one(
             {"chatroom_id": chatroom_id},
-            {"$set": {"updated_at": datetime.now(KST)}},  # KST 기준으로 저장
+            {"$set": {"updated_at": datetime.now(KST)}},
         )
 
-        # 디버깅을 위한 로그 추가
         print(f"채팅 데이터 저장됨: {chat_data}")
         print(f"저장된 채팅방 ID: {chatroom_id}")
         print(f"현재 채팅방의 채팅 개수: {len(chatroom['chats'])}")
@@ -91,6 +90,5 @@ def save_chat(
         }
 
     except Exception as e:
-        # 예외 발생 시 오류 메시지 출력
         print(f"MongoDB 삽입 오류: {e}")
         raise RuntimeError(f"MongoDB 삽입 오류: {e}")

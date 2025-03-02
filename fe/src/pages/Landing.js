@@ -29,7 +29,12 @@ const Container = styled.div`
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, rgb(255, 177, 208), rgb(184, 247, 250), rgb(217, 191, 255));
+  background: linear-gradient(
+    135deg,
+    rgb(255, 177, 208),
+    rgb(184, 247, 250),
+    rgb(217, 191, 255)
+  );
   overflow: hidden;
 `;
 
@@ -42,10 +47,10 @@ const SliderContainer = styled.div`
   overflow: hidden;
   margin-top: 20%;
   @media (max-width: 768px) {
-    margin-top: 25%;
+    margin-top: 20%;
   }
   @media (min-width: 768px) and (max-width: 1024px) {
-    margin-top: 25%;
+    margin-top: 20%;
   }
   @media (min-width: 1024px) {
     margin-top: 20%;
@@ -63,7 +68,8 @@ const Slide = styled.div`
   background-position: center;
   animation: ${slideIn} 1s ease-out, ${fadeIn} 1s ease-out;
   opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
-  transform: ${({ isVisible }) => (isVisible ? "translateX(0)" : "translateX(100%)")};
+  transform: ${({ isVisible }) =>
+    isVisible ? "translateX(0)" : "translateX(100%)"};
   transition: opacity 1s ease-in-out, transform 1s ease-in-out;
 `;
 
@@ -135,9 +141,9 @@ const phrases = [
     bgImage: "/assets/calendar2.jpg",
   },
   {
-    heading: "친구처럼 대화하는 챗봇!",
+    heading: "친구처럼 대화하는 감정을 읽는 챗봇",
     description:
-      "혼자 있을 때, 챗봇이 항상 곁에 있습니다. \n고민을 털어놓고, 지친 마음을 풀어보세요. \n언제든지 따뜻한 대화가 기다리고 있어요.",
+      "고민을 털어놓고, 지친 마음을 풀어보세요. \n웹캠을 통해 실시간으로 감정을 분석하고, 그에 맞는 따뜻한 대화를 제공합니다. \n언제든지 당신의 감정에 맞춘 대화가 기다리고 있어요.",
     bgImage: "/assets/chatbot2.jpg",
   },
   {

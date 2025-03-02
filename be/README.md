@@ -117,6 +117,10 @@ REDIS_MAXMEMORY_POLICY=allkeys-lru
 # openai api키
 OPENAI_API_KEY=         # openai에서 발급한 키
 
+# 로컬 모델 경로
+MODEL_PATH=./data/model/TEST_1efficientnet_b2_model.keras
+
+
 FLASK_ENV=development
 ```
   
