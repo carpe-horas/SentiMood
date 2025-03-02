@@ -22,6 +22,7 @@ const Logo = styled(Link)`
   font-size: 20px;
   text-decoration: none;
   color: white;
+  margin-left: 15px; 
   margin-right: 60px;
   &:hover {
     color: rgb(148, 201, 253);

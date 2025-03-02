@@ -113,28 +113,28 @@ const TextArea = styled.textarea`
   }
 `;
 
-const Select = styled.select`
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  font-size: 16px;
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1),
-    -5px -5px 10px rgba(255, 255, 255, 0.5);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+// const Select = styled.select`
+//   padding: 15px;
+//   border: 1px solid #ddd;
+//   border-radius: 10px;
+//   font-size: 16px;
+//   box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1),
+//     -5px -5px 10px rgba(255, 255, 255, 0.5);
+//   transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 8px 8px 15px rgba(0, 0, 0, 0.2),
-      -8px -8px 15px rgba(255, 255, 255, 0.5);
-  }
+//   &:hover {
+//     transform: translateY(-2px);
+//     box-shadow: 8px 8px 15px rgba(0, 0, 0, 0.2),
+//       -8px -8px 15px rgba(255, 255, 255, 0.5);
+//   }
 
-  &:focus {
-    outline: none;
-    border-color: #ff9aa2;
-    box-shadow: 0 0 10px rgba(255, 154, 162, 0.5),
-      5px 5px 15px rgba(0, 0, 0, 0.1);
-  }
-`;
+//   &:focus {
+//     outline: none;
+//     border-color: #ff9aa2;
+//     box-shadow: 0 0 10px rgba(255, 154, 162, 0.5),
+//       5px 5px 15px rgba(0, 0, 0, 0.1);
+//   }
+// `;
 
 const ButtonGroup = styled.div`
   display: flex;
@@ -167,7 +167,7 @@ const EditDiary = () => {
   const [emotion, setEmotion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const emotions = ["happy", "sad", "angry", "neutral"];
+  // const emotions = ["happy", "sad", "angry", "neutral"];
 
   useEffect(() => {
     const fetchDiary = async () => {

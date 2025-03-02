@@ -50,15 +50,17 @@ class Config:
         "SWAGGER_API_DOCS", "/static/swagger.json"
     )  # Swagger JSON 문서 경로
 
-    # 모델 경로 설정 (반드시 .env에서 설정해야 함)
+    # 모델 경로 설정
     MODEL_PATH = os.getenv("MODEL_PATH")
-
-    # 필수 환경 변수 확인
     if not MODEL_PATH:
-        raise ValueError(
-            "환경 변수 MODEL_PATH가 설정되지 않았습니다. .env 파일을 확인하세요."
-        )
+        raise ValueError("환경 변수 MODEL_PATH가 설정되지 않았습니다. .env 파일을 확인하세요.")
 
+    # 벡터 DB 경로 설정
+    VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH")
+    if not VECTOR_DB_PATH:
+        raise ValueError("환경 변수 VECTOR_DB_PATH가 설정되지 않았습니다. .env 파일을 확인하세요.")
+
+    # SECRET_KEY = os.getenv("SECRET_KEY", "your_jwt_secret_key")
 
 class ProductionConfig(Config):
     """배포 환경 설정"""
@@ -81,4 +83,4 @@ if FLASK_ENV == "production":
 else:
     ActiveConfig = DevelopmentConfig
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your_jwt_secret_key")
+

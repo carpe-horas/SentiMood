@@ -26,7 +26,7 @@ set FLASK_APP=app
 flask run
 ```
 
-## 도커 파일 실행
+## 도커 실행 : redis 미설치 시
 1. .env 확인 : 아래 내용이 들어있어야 함
 ```
 REDIS_HOST=redis  
@@ -74,6 +74,13 @@ ping
 ```
 6. redis-server.exe 실행(mysql 워크벤치처럼 켜놓키만 하면 됩니다.)
 
+## 구글 앱 비밀번호 생성 후 .env에 채워넣기  
+.
+
+## 아래 링크에서 데이터 다운로드
+- be/data/faiss_v2 폴더 생성 후 파일 두 개 넣기  
+[파일 다운로드](https://drive.google.com/drive/folders/1CdRVD3lnviZjhRYWSXLjNFq_QQfhc_79?usp=sharing)
+
 
 ## .env 내용(오른쪽에  # 내용 참고하여 입력)
 ```
@@ -117,8 +124,9 @@ REDIS_MAXMEMORY_POLICY=allkeys-lru
 # openai api키
 OPENAI_API_KEY=         # openai에서 발급한 키
 
-# 로컬 모델 경로
+# 모델 및 벡터 db 경로
 MODEL_PATH=./data/model/TEST_1efficientnet_b2_model.keras
+VECTOR_DB_PATH=./data/faiss_v2
 
 
 FLASK_ENV=development
