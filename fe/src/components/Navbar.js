@@ -121,7 +121,7 @@ const Navbar = () => {
     <Nav scrolled={scrolled}>
       <NavContainer>
         {/* 왼쪽 로고 */}
-        <Logo to={isAuthenticated ? "/home" : "/"}>RobotPet</Logo>
+        <Logo to={isAuthenticated ? "/home" : "/"}>Emotion Chat</Logo>
         {/* 로그인 후 메뉴 */}
         {isAuthenticated && (
           <MenuLeft>
