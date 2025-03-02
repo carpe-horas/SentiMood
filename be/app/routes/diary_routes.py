@@ -18,11 +18,10 @@ import pytz
 
 diary_bp = Blueprint("diary", __name__)
 
-# 한국 표준시(KST) 정의
 KST = pytz.timezone("Asia/Seoul")
 
 
-# 대화 내용 요약 API
+# 대화 내용 요약
 @diary_bp.route("/summary", methods=["POST"])
 @jwt_required_without_bearer
 def summarize_conversation():
@@ -45,7 +44,7 @@ def summarize_conversation():
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 요약 생성과 동시에 DB 저장
+# 일기 요약 생성과 동시에 DB 저장
 @diary_bp.route("/summary/save", methods=["POST"])
 @jwt_required_without_bearer  
 def summarize_and_save_diary():
@@ -82,7 +81,7 @@ def summarize_and_save_diary():
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 일기장 저장 API
+# 일기 저장
 @diary_bp.route("/save", methods=["POST"])
 @jwt_required_without_bearer
 def save_diary():
@@ -111,7 +110,7 @@ def save_diary():
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 일기 목록 조회 API
+# 일기 목록 조회
 @diary_bp.route("/list", methods=["GET"])
 @jwt_required_without_bearer
 def get_diary_list_api():
@@ -135,8 +134,7 @@ def get_diary_list_api():
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-
-# 일기 상세 조회 API
+# 일기 상세 조회
 @diary_bp.route("/<diary_id>", methods=["GET"])
 @jwt_required_without_bearer
 def get_diary_detail_route(diary_id):
@@ -154,7 +152,7 @@ def get_diary_detail_route(diary_id):
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 일기 삭제 API
+# 일기 삭제
 @diary_bp.route("/delete/<diary_id>", methods=["DELETE"])
 @jwt_required_without_bearer
 def delete_diary_route(diary_id):
@@ -175,7 +173,7 @@ def delete_diary_route(diary_id):
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 일기 수정 API
+# 일기 수정
 @diary_bp.route("/update/<diary_id>", methods=["PUT"])
 @jwt_required_without_bearer
 def update_diary_route(diary_id):
@@ -211,7 +209,7 @@ def update_diary_route(diary_id):
 
 
 
-# 일기 검색 API
+# 일기 검색
 @diary_bp.route("/search", methods=["GET"])
 @jwt_required_without_bearer
 def search_diary():
@@ -230,7 +228,7 @@ def search_diary():
         return jsonify({"error": f"오류 발생: {str(e)}"}), 500
 
 
-# 새 일기 쓰기 API
+# 새 일기 쓰기
 @diary_bp.route("/create", methods=["POST"])
 @jwt_required_without_bearer
 def create_diary_route():

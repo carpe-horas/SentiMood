@@ -122,52 +122,6 @@ def delete_emotion_results(chatroom_id):
         raise RuntimeError(f"감정 결과 삭제 오류: {e}")
 
 
-def auto_end_emotions():
-    """
-    미종료된 감정 분석 데이터를 자동 종료
-    """
-    try:
-        kst_now = datetime.now(KST)
-
-        result = mongo.db.emotions.update_many(
-            {"timestamp": {"$lt": kst_now}},
-            {"$set": {"confidence": None}},  # 신뢰도를 None으로 설정
-        )
-        return result.modified_count  # 업데이트된 문서 수 반환
-    except Exception as e:
-        raise RuntimeError(f"자동 종료 오류: {e}")
-
-
-def get_model_status(model):
-    """
-    감정 분석 모델의 상태 확인
-    """
-    try:
-        model.summary()
-        return "정상"
-    except Exception as e:
-        return f"오류 발생: {str(e)}"
-
-
-def get_user_emotion_history(user_id):
-    """
-    사용자의 감정 분석 기록을 조회
-    :param user_id: 사용자 ID
-    """
-    try:
-        emotions = mongo.db.emotions.find({"user_id": user_id})
-        return [
-            {
-                "emotion": emotion["emotion"],
-                "confidence": emotion["confidence"],
-                "timestamp": emotion["timestamp"],
-            }
-            for emotion in emotions
-        ]
-    except Exception as e:
-        raise RuntimeError(f"사용자 감정 기록 조회 오류: {e}")
-
-
 def get_most_common_emotion(emotion_data):
     """
     가장 많이 감지된 감정을 찾아 반환하는 함수

@@ -10,6 +10,20 @@ import { BeatLoader } from "react-spinners";
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
 
+const ChatListWrapper = styled.div`
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 40px;
+  background: linear-gradient(to top, rgb(213, 230, 249), #f0f4f8);
+  background-size: cover;
+  box-sizing: border-box;
+  overflow-y: hidden;
+`;
+
 const ChatListBox = styled.div`
   width: 100%;
   max-width: 430px;
@@ -22,20 +36,25 @@ const ChatListBox = styled.div`
   flex-direction: column;
   align-items: center;
   height: 650px;
+  overflow: hidden;
+  box-sizing: border-box;
 `;
 
 const ChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgb(148, 195, 248);
+  background: linear-gradient(120deg, rgb(106, 159, 251), rgb(205, 98, 250));
   padding: 15px;
   font-size: 25px;
   font-weight: bold;
   color: rgb(255, 255, 255);
-  border-bottom: 4px solidrgb(255, 255, 255);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  border-bottom: 4px solid rgba(255, 255, 255, 0.5);
   border-radius: 15px 15px 0 0;
   width: 100%;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 `;
 
 const ChatListContainer = styled.div`
@@ -68,7 +87,7 @@ const ChatRoomItem = styled.div`
   margin-bottom: 10px;
   border-radius: 12px;
   cursor: pointer;
-  background-color: rgb(230, 245, 255);
+  background-color: rgb(216, 242, 251);
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -76,9 +95,9 @@ const ChatRoomItem = styled.div`
     box-shadow 0.2s ease;
 
   &:hover {
-    background-color: rgb(163, 215, 249);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    background-color: rgb(113, 197, 254);
+    transform: translateY(-5px) rotateX(3deg);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
   }
 
   &:active {
@@ -108,7 +127,7 @@ const LoadingContainer = styled.div`
 `;
 
 const CreateChatButton = styled.button`
-  margin: 12px;
+  margin: 20px 0 10px 0;
   padding: 12px 20px;
   background-color: rgb(131, 199, 254);
   color: white;
@@ -143,6 +162,7 @@ const LoadingText = styled.div`
 const ChatList = ({ userId, setSelectedChatroom }) => {
   const [chatrooms, setChatrooms] = useState([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchChatrooms = async () => {
       try {
@@ -212,55 +232,57 @@ const ChatList = ({ userId, setSelectedChatroom }) => {
   };
 
   return (
-    <ChatListBox>
-      <ChatHeader>대화 목록</ChatHeader>
-      <CreateChatButton
-        onClick={() => {
-          setTimeout(() => {
-            handleCreateChatroom();
-          }, 300);
-        }}
-      >
-        + 새 대화하기
-      </CreateChatButton>
+    <ChatListWrapper>
+      <ChatListBox>
+        <ChatHeader>대화 목록</ChatHeader>
+        <CreateChatButton
+          onClick={() => {
+            setTimeout(() => {
+              handleCreateChatroom();
+            }, 300);
+          }}
+        >
+          + 새 대화하기
+        </CreateChatButton>
 
-      {/* 로딩 상태일 때만 로딩 스피너와 텍스트 표시 */}
-      {loading ? (
-        <LoadingContainer>
-          <BeatLoader size={50} color="#5f71f5" />
-          <LoadingText>채팅 목록을 불러오는 중입니다...</LoadingText>
-        </LoadingContainer>
-      ) : (
-        <ChatListContainer>
-          {chatrooms.map((room) => (
-            <ChatRoomItem
-              key={room.chatroom_id}
-              onClick={() => {
-                setTimeout(() => {
-                  setSelectedChatroom(room.chatroom_id);
-                }, 300);
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+        {/* 로딩 상태일 때만 로딩 스피너와 텍스트 표시 */}
+        {loading ? (
+          <LoadingContainer>
+            <BeatLoader size={50} color="#5f71f5" />
+            <LoadingText>채팅 목록을 불러오는 중입니다...</LoadingText>
+          </LoadingContainer>
+        ) : (
+          <ChatListContainer>
+            {chatrooms.map((room) => (
+              <ChatRoomItem
+                key={room.chatroom_id}
+                onClick={() => {
+                  setTimeout(() => {
+                    setSelectedChatroom(room.chatroom_id);
+                  }, 300);
                 }}
               >
-                <span>{getEmotionIcon(room.emotion)} </span>
-                <span style={{ marginLeft: "10px", textAlign: "right" }}>
-                  {room.updated_at
-                    ? dayjs(room.updated_at).format("YYYY-MM-DD HH:mm")
-                    : "날짜 없음"}{" "}
-                  /{room.conversation_end ? "종료된 대화" : "진행중인 대화"}
-                </span>
-              </div>
-            </ChatRoomItem>
-          ))}
-        </ChatListContainer>
-      )}
-    </ChatListBox>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>{getEmotionIcon(room.emotion)} </span>
+                  <span style={{ marginLeft: "10px", textAlign: "right" }}>
+                    {room.updated_at
+                      ? dayjs(room.updated_at).format("YYYY-MM-DD HH:mm")
+                      : "날짜 없음"}{" "}
+                    /{room.conversation_end ? "종료된 대화" : "진행중인 대화"}
+                  </span>
+                </div>
+              </ChatRoomItem>
+            ))}
+          </ChatListContainer>
+        )}
+      </ChatListBox>
+    </ChatListWrapper>
   );
 };
 
