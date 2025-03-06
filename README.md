@@ -2,10 +2,10 @@
 
 
 ### 백엔드 설명
-[백엔드 폴더구조 README](./be/README.md)
+[백엔드 폴더구조 및 설치 README](./be/README.md)
 
 ### 프론트엔드 설명
-[프론트엔드 폴더구조 README](./fe/README.md)
+[프론트엔드 폴더구조 및 설치README](./fe/README.md)
 
 ### 전체 폴더구조
 ```
