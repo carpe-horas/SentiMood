@@ -32,22 +32,11 @@
 ![ERD](img/Erd-last.jpg)
 
 ### 기술스택
-백엔드	:  ![Flask](https://img.shields.io/badge/-Flask-00A3E0?logo=flask&logoColor=white) (![JWT](https://img.shields.io/badge/-JWT-000000?logo=jsonwebtokens&logoColor=white)
-![bcrypt](https://img.shields.io/badge/-bcrypt-000000?logo=lock&logoColor=white)
-![Swagger](https://img.shields.io/badge/-Swagger-000000?logo=swagger&logoColor=black)
-)  
-프론트엔드	:  ![React](https://img.shields.io/badge/-React-61DAFB?logo=react&logoColor=black)
- (![Zustand](https://img.shields.io/badge/-Zustand-000000?logo=react&logoColor=white)
-![Axios](https://img.shields.io/badge/-Axios-000000?logo=axios&logoColor=white)
-![Styled Components](https://img.shields.io/badge/-Styled%20Components-000000?logo=styled-components&logoColor=white)
-)  
-데이터베이스  :  ![MySQL](https://img.shields.io/badge/-MySQL-4479A1?logo=mysql&logoColor=white)
-![MongoDB](https://img.shields.io/badge/-MongoDB-47A248?logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/-Redis-DC382D?logo=redis&logoColor=white)
-![FAISS](https://img.shields.io/badge/-FAISS-005F9E?logo=python&logoColor=white)
-(벡터 DB)  
+백엔드	:  Flask (JWT, bcrypt, Swagger)  
+프론트엔드	:  React.js (Zustand, Axios, Styled Components)  
+데이터베이스  :  MySQL, MongoDB, Redis, FAISS (벡터 DB)  
 AI 모델	 :  EfficientNet B2 (얼굴 감정 분석), FAISS + RAG (챗봇 검색)  
-웹캠 및 이미지 처리  :  react-webcam, OpenCV 
+웹캠 및 이미지 처리  :  react-webcam, OpenCV  
 
 ### 백엔드 설명
 [백엔드 폴더구조 및 설치 README](./be/README.md)
