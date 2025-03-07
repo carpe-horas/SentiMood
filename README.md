@@ -19,14 +19,20 @@
 - **대화 요약 및 일기 기능**  
   - 대화가 종료되면 자동으로 요약하여 일기로 저장     
 
-### UI/UX 미리보기
 #### 감정 통계 그래프 (홈 화면)
+![ERD](img/home.gif)
+
 #### 챗봇 상담 화면
+![ERD](img/chatbot.gif)
+
 #### 감정 캘린더
+![ERD](img/calendar.jpg)
+
 #### 일기장
+![ERD](img/diary.jpg)  
 
 ### Model Architecture
-![ERD](img/model-architecture.jpg)
+![Model Architecture](img/model-architecture.jpg)
 
 ### ERD
 ![ERD](img/Erd-last.jpg)
@@ -35,7 +41,7 @@
 백엔드	:  Flask (JWT, bcrypt, Swagger)  
 프론트엔드	:  React.js (Zustand, Axios, Styled Components)  
 데이터베이스  :  MySQL, MongoDB, Redis, FAISS (벡터 DB)  
-AI 모델	 :  EfficientNet B2 (얼굴 감정 분석), FAISS + RAG (챗봇 검색)  
+AI 모델	 :  EfficientNet B2 (얼굴 감정 분석 모델), FAISS + RAG (챗봇 검색)  
 웹캠 및 이미지 처리  :  react-webcam, OpenCV  
 
 ### 백엔드 설명
