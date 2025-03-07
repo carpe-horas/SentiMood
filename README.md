@@ -20,16 +20,16 @@
   - 대화가 종료되면 자동으로 요약하여 일기로 저장     
 
 #### 감정 통계 그래프 (홈 화면)
-![ERD](img/home.gif)
+![home](img/home.gif)
 
 #### 챗봇 상담 화면
-![ERD](img/chatbot.gif)
+![chatbot](img/chatbot.gif)
 
 #### 감정 캘린더
-![ERD](img/calendar.jpg)
+![calendar](img/calendar.jpg)
 
 #### 일기장
-![ERD](img/diary.jpg)  
+![diary](img/diary.jpg)  
 
 ### Model Architecture
 ![Model Architecture](img/model-architecture.jpg)
